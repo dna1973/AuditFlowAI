@@ -14,7 +14,15 @@ async function processAuditDocument(auditId: string, documentPath: string) {
     const objectStorageService = new ObjectStorageService();
     
     // Download document from storage
-    const fileBuffer = await objectStorageService.getFile(documentPath);
+    const objectFile = await objectStorageService.getObjectEntityFile(documentPath);
+    const fileBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const stream = objectFile.createReadStream();
+      
+      stream.on('data', (chunk) => chunks.push(chunk));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
     
     // Extract text from PDF
     const extractedText = await extractTextFromPDF(fileBuffer);
@@ -25,13 +33,12 @@ async function processAuditDocument(auditId: string, documentPath: string) {
     // Create audit report
     const reportData = {
       auditId,
-      totalBalance: analysis.totalBalance ? parseFloat(analysis.totalBalance.toString()) : null,
-      totalExpenses: analysis.totalExpenses ? parseFloat(analysis.totalExpenses.toString()) : null,
-      biggestExpense: analysis.biggestExpense ? parseFloat(analysis.biggestExpense.toString()) : null,
+      totalBalance: analysis.totalBalance ? analysis.totalBalance.toString() : null,
+      totalExpenses: analysis.totalExpenses ? analysis.totalExpenses.toString() : null,
+      biggestExpense: analysis.biggestExpense ? analysis.biggestExpense.toString() : null,
       biggestExpenseDescription: analysis.biggestExpenseDescription || null,
       expenseCategories: analysis.expenseCategories || [],
       inconsistencies: analysis.inconsistencies || [],
-      findings: analysis.findings || [],
       aiAnalysis: analysis.summary || "",
     };
     
@@ -168,6 +175,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching audits:", error);
       res.status(500).json({ message: "Failed to fetch audits" });
+    }
+  });
+
+  // New combined upload and create audit endpoint
+  app.post("/api/audits/upload", isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const file = req.file;
+      const { condominiumId, month, year } = req.body;
+      
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      console.log("Processing file upload:", file.originalname, "Size:", file.size);
+      
+      // Verify user owns the condominium
+      const condominium = await storage.getCondominiumById(condominiumId);
+      if (!condominium || condominium.ownerId !== userId) {
+        console.log("Access denied for user", userId, "to condominium", condominiumId);
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Upload file to object storage
+      const objectStorageService = new ObjectStorageService();
+      const documentPath = await objectStorageService.uploadObject(file.buffer, file.originalname, userId);
+      
+      // Create audit record
+      const auditData = {
+        condominiumId,
+        month: parseInt(month),
+        year: parseInt(year),
+        fileName: file.originalname,
+        fileSize: file.size,
+        documentPath,
+        status: "pending"
+      };
+      
+      const audit = await storage.createAudit(auditData);
+      console.log("Audit created:", audit.id);
+      
+      // Start processing immediately
+      console.log("Starting document processing for audit:", audit.id);
+      processAuditDocument(audit.id, documentPath).catch(error => {
+        console.error("Background processing failed:", error);
+        storage.updateAuditStatus(audit.id, "error").catch(console.error);
+      });
+      
+      // Update status to processing
+      await storage.updateAuditStatus(audit.id, "processing");
+      
+      res.status(201).json(audit);
+    } catch (error) {
+      console.error("Error uploading file and creating audit:", error);
+      res.status(500).json({ error: "Failed to upload file and create audit" });
     }
   });
 

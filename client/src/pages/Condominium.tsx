@@ -86,86 +86,53 @@ export default function Condominium() {
       setUploadProgress(10);
       
       try {
-        // Get upload URL
-        const uploadUrlResponse: any = await apiRequest('POST', '/api/objects/upload');
-        const uploadURL = uploadUrlResponse.uploadURL;
-        setUploadProgress(20);
-        
-        // Upload file with progress tracking
+        // Upload file directly to our backend with progress
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('condominiumId', condominiumId);
+        formData.append('month', month);
+        formData.append('year', year);
         
-        const uploadResponse = await new Promise<Response>((resolve, reject) => {
+        const result = await new Promise<any>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           
+          // Track upload progress
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
-              const progress = Math.round((event.loaded * 60) / event.total) + 20; // 20-80%
+              const progress = Math.round((event.loaded * 80) / event.total) + 10; // 10-90%
               setUploadProgress(progress);
             }
           });
           
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              setUploadProgress(85);
-              // Create a proper response object
-              const response = {
-                ok: true,
-                status: xhr.status,
-                json: async () => {
-                  try {
-                    return xhr.responseText ? JSON.parse(xhr.responseText) : {};
-                  } catch (e) {
-                    return { path: `/uploads/${file.name}` }; // fallback
-                  }
-                },
-                text: async () => xhr.responseText
-              };
-              resolve(response as Response);
+              setUploadProgress(95);
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response);
+              } catch (e) {
+                reject(new Error('Resposta inválida do servidor'));
+              }
             } else {
-              reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+              reject(new Error(`Falha no upload: ${xhr.status} - ${xhr.responseText}`));
             }
           });
           
           xhr.addEventListener('error', () => {
-            reject(new Error('Erro de rede durante o upload'));
+            reject(new Error('Erro de conexão durante o upload'));
           });
           
           xhr.addEventListener('timeout', () => {
-            reject(new Error('Timeout durante o upload'));
+            reject(new Error('Timeout durante o upload (5 minutos)'));
           });
           
-          xhr.open('POST', uploadURL);
+          xhr.open('POST', '/api/audits/upload');
           xhr.timeout = 300000; // 5 minutes timeout
           xhr.send(formData);
         });
         
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`Falha no upload: ${errorText}`);
-        }
-        
-        let uploadResult;
-        try {
-          uploadResult = await uploadResponse.json();
-        } catch (e) {
-          console.warn("Failed to parse upload response, using fallback");
-          uploadResult = { path: `/uploads/${file.name}` };
-        }
-        setUploadProgress(90);
-        
-        // Create audit record
-        const auditResult = await apiRequest('POST', '/api/audits', {
-          condominiumId,
-          month,
-          year: parseInt(year),
-          fileName: file.name,
-          documentPath: uploadResult.path || `/uploads/${file.name}`,
-          fileSize: file.size,
-        });
-        
         setUploadProgress(100);
-        return auditResult;
+        return result;
       } finally {
         setIsUploading(false);
       }
