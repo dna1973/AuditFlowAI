@@ -1,0 +1,137 @@
+import {
+  users,
+  condominiums,
+  audits,
+  auditReports,
+  type User,
+  type UpsertUser,
+  type Condominium,
+  type InsertCondominium,
+  type Audit,
+  type InsertAudit,
+  type AuditReport,
+  type InsertAuditReport,
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
+
+export interface IStorage {
+  // User operations
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Condominium operations
+  getCondominiumsByOwnerId(ownerId: string): Promise<Condominium[]>;
+  getCondominiumById(id: string): Promise<Condominium | undefined>;
+  createCondominium(condominium: InsertCondominium): Promise<Condominium>;
+  
+  // Audit operations
+  getAuditsByCondominiumId(condominiumId: string): Promise<Audit[]>;
+  getAuditById(id: string): Promise<Audit | undefined>;
+  createAudit(audit: InsertAudit): Promise<Audit>;
+  updateAuditStatus(id: string, status: string, documentPath?: string): Promise<void>;
+  
+  // Audit report operations
+  getAuditReportByAuditId(auditId: string): Promise<AuditReport | undefined>;
+  createAuditReport(report: InsertAuditReport): Promise<AuditReport>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  async getCondominiumsByOwnerId(ownerId: string): Promise<Condominium[]> {
+    return await db
+      .select()
+      .from(condominiums)
+      .where(eq(condominiums.ownerId, ownerId))
+      .orderBy(desc(condominiums.createdAt));
+  }
+
+  async getCondominiumById(id: string): Promise<Condominium | undefined> {
+    const [condominium] = await db
+      .select()
+      .from(condominiums)
+      .where(eq(condominiums.id, id));
+    return condominium;
+  }
+
+  async createCondominium(condominium: InsertCondominium): Promise<Condominium> {
+    const [newCondominium] = await db
+      .insert(condominiums)
+      .values(condominium)
+      .returning();
+    return newCondominium;
+  }
+
+  async getAuditsByCondominiumId(condominiumId: string): Promise<Audit[]> {
+    return await db
+      .select()
+      .from(audits)
+      .where(eq(audits.condominiumId, condominiumId))
+      .orderBy(desc(audits.year), desc(audits.month));
+  }
+
+  async getAuditById(id: string): Promise<Audit | undefined> {
+    const [audit] = await db
+      .select()
+      .from(audits)
+      .where(eq(audits.id, id));
+    return audit;
+  }
+
+  async createAudit(audit: InsertAudit): Promise<Audit> {
+    const [newAudit] = await db
+      .insert(audits)
+      .values(audit)
+      .returning();
+    return newAudit;
+  }
+
+  async updateAuditStatus(id: string, status: string, documentPath?: string): Promise<void> {
+    const updateData: any = { status, updatedAt: new Date() };
+    if (documentPath) {
+      updateData.documentPath = documentPath;
+    }
+    
+    await db
+      .update(audits)
+      .set(updateData)
+      .where(eq(audits.id, id));
+  }
+
+  async getAuditReportByAuditId(auditId: string): Promise<AuditReport | undefined> {
+    const [report] = await db
+      .select()
+      .from(auditReports)
+      .where(eq(auditReports.auditId, auditId));
+    return report;
+  }
+
+  async createAuditReport(report: InsertAuditReport): Promise<AuditReport> {
+    const [newReport] = await db
+      .insert(auditReports)
+      .values(report)
+      .returning();
+    return newReport;
+  }
+}
+
+export const storage = new DatabaseStorage();
