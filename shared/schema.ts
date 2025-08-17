@@ -122,7 +122,7 @@ export const userCondominiums = pgTable("user_condominiums", {
   condominiumId: varchar("condominium_id").notNull(),
   quadra: varchar("quadra"), // Quadra for this specific condominium
   lote: varchar("lote"), // Lote for this specific condominium
-  role: varchar("role").notNull().default("resident"), // resident, manager, admin
+  role: varchar("role").notNull().default("inquilino"), // inquilino, proprietario
   createdAt: timestamp("created_at").defaultNow(),
 });
 

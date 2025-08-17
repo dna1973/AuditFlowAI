@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,7 +41,7 @@ const userCondominiumFormSchema = z.object({
   condominiumId: z.string().min(1, "Condomínio é obrigatório"),
   quadra: z.string().min(1, "Quadra é obrigatória"),
   lote: z.string().min(1, "Lote é obrigatório"),
-  role: z.enum(["resident", "manager", "admin"]),
+  role: z.enum(["inquilino", "proprietario"]),
 });
 
 interface UserWithAssociations extends User {
@@ -76,7 +76,7 @@ export default function AdminPanel() {
     mutationFn: async (userData: z.infer<typeof userFormSchema> & { id?: string }) => {
       const endpoint = userData.id ? `/api/admin/users/${userData.id}` : '/api/admin/users';
       const method = userData.id ? 'PATCH' : 'POST';
-      return await apiRequest(endpoint, method, userData);
+      return await apiRequest(method, endpoint, userData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -92,7 +92,7 @@ export default function AdminPanel() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return await apiRequest(`/api/admin/users/${userId}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/admin/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -106,7 +106,7 @@ export default function AdminPanel() {
   // User-Condominium association mutation
   const associationMutation = useMutation({
     mutationFn: async (data: z.infer<typeof userCondominiumFormSchema>) => {
-      return await apiRequest('/api/admin/user-condominiums', 'POST', data);
+      return await apiRequest('POST', '/api/admin/user-condominiums', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -121,7 +121,7 @@ export default function AdminPanel() {
   // Delete audit report mutation
   const deleteReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
-      return await apiRequest(`/api/admin/audit-reports/${reportId}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/admin/audit-reports/${reportId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-reports"] });
@@ -152,7 +152,7 @@ export default function AdminPanel() {
       condominiumId: "",
       quadra: "",
       lote: "",
-      role: "resident",
+      role: "inquilino",
     },
   });
 
@@ -328,6 +328,9 @@ export default function AdminPanel() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Associar Usuário a Condomínio</DialogTitle>
+                  <DialogDescription>
+                    Associe um usuário a um condomínio específico com quadra e lote.
+                  </DialogDescription>
                 </DialogHeader>
                 <Form {...associationForm}>
                   <form onSubmit={associationForm.handleSubmit(onAssociationSubmit)} className="space-y-4">
@@ -420,9 +423,8 @@ export default function AdminPanel() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="resident">Morador</SelectItem>
-                              <SelectItem value="manager">Gestor</SelectItem>
-                              <SelectItem value="admin">Administrador</SelectItem>
+                              <SelectItem value="inquilino">Inquilino</SelectItem>
+                              <SelectItem value="proprietario">Proprietário</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
