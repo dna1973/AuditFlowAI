@@ -416,6 +416,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download audit PDF
+  app.get("/api/audits/:id/download", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const auditId = req.params.id;
+      
+      // Get audit and verify ownership
+      const audit = await storage.getAuditById(auditId);
+      if (!audit) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      const condominium = await storage.getCondominiumById(audit.condominiumId);
+      if (!condominium || condominium.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!audit.documentPath) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // Download from object storage
+      const objectStorageService = new ObjectStorageService();
+      const fileStream = await objectStorageService.downloadObject(audit.documentPath, userId);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${audit.fileName}"`);
+      
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading audit document:", error);
+      res.status(500).json({ error: "Failed to download document" });
+    }
+  });
+
+  // Delete audit
+  app.delete("/api/audits/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const auditId = req.params.id;
+      
+      // Get audit and verify ownership
+      const audit = await storage.getAuditById(auditId);
+      if (!audit) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      const condominium = await storage.getCondominiumById(audit.condominiumId);
+      if (!condominium || condominium.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Delete from object storage if exists
+      if (audit.documentPath) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          await objectStorageService.deleteObject(audit.documentPath, userId);
+        } catch (error) {
+          console.warn("Failed to delete object from storage:", error);
+        }
+      }
+      
+      // Delete audit report first (if exists)
+      try {
+        const report = await storage.getAuditReportByAuditId(auditId);
+        if (report) {
+          await storage.deleteAuditReport(report.id);
+        }
+      } catch (error) {
+        console.warn("Failed to delete audit report:", error);
+      }
+      
+      // Delete audit
+      await storage.deleteAudit(auditId);
+      
+      res.json({ message: "Audit deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting audit:", error);
+      res.status(500).json({ error: "Failed to delete audit" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

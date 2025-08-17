@@ -49,6 +49,9 @@ export interface IStorage {
   
   // Dashboard stats
   getDashboardStats(userId: string): Promise<any>;
+  
+  // Delete operations
+  deleteAudit(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -221,6 +224,10 @@ export class DatabaseStorage implements IStorage {
       condominiums: condominiums.length,
       issues: totalInconsistencies,
     };
+  }
+
+  async deleteAudit(id: string): Promise<void> {
+    await db.delete(audits).where(eq(audits.id, id));
   }
 }
 

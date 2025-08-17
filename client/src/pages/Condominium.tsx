@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Calendar, CheckCircle } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { ArrowLeft, FileText, Calendar, CheckCircle, Download, Trash2, Eye, AlertTriangle } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link, useRoute } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Condominium, Audit } from "@shared/schema";
 
 const statusConfig = {
@@ -18,6 +20,7 @@ const statusConfig = {
 export default function Condominium() {
   const [match, params] = useRoute("/condominium/:id");
   const condominiumId = params?.id;
+  const { toast } = useToast();
 
   const { data: condominium } = useQuery<Condominium>({
     queryKey: ["/api/condominiums", condominiumId],
@@ -28,6 +31,65 @@ export default function Condominium() {
     queryKey: ["/api/condominiums", condominiumId, "audits"],
     enabled: !!condominiumId,
   });
+
+  // Delete audit mutation
+  const deleteAuditMutation = useMutation({
+    mutationFn: async (auditId: string) => {
+      return await apiRequest('DELETE', `/api/audits/${auditId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
+      toast({ title: "Sucesso", description: "Prestação de contas excluída com sucesso!" });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Erro", 
+        description: error.message || "Falha ao excluir prestação de contas",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleDownloadPdf = async (audit: Audit) => {
+    if (!audit.documentPath) {
+      toast({
+        title: "Erro",
+        description: "Documento não encontrado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/audits/${audit.id}/download`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Falha no download');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = audit.fileName || `prestacao_contas_${audit.month}_${audit.year}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao fazer download do documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleViewReport = (auditId: string) => {
+    window.open(`/audit-report/${auditId}`, '_blank');
+  };
 
   if (!condominium) {
     return <div>Carregando...</div>;
@@ -149,17 +211,50 @@ export default function Condominium() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {audit.status === "completed" ? (
-                          <Link href={`/audit-report/${audit.id}`}>
-                            <a className="text-verde-accent hover:text-green-600 font-medium text-sm" data-testid={`link-view-report-${audit.id}`}>
-                              Ver Relatório
-                            </a>
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400 text-sm">
-                            {audit.status === "error" ? "Erro na análise" : "Aguardando..."}
-                          </span>
-                        )}
+                        <div className="flex items-center space-x-2">
+                          {/* Download PDF */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPdf(audit)}
+                            disabled={!audit.documentPath}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-download-${audit.id}`}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          
+                          {/* View Report */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewReport(audit.id)}
+                            disabled={audit.status !== 'completed'}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-view-report-${audit.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          
+                          {/* Delete Audit */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteAuditMutation.mutate(audit.id)}
+                            disabled={deleteAuditMutation.isPending}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            data-testid={`button-delete-${audit.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          
+                          {/* Show error tooltip if needed */}
+                          {audit.status === 'error' && (
+                            <div className="flex items-center text-red-600">
+                              <AlertTriangle className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
