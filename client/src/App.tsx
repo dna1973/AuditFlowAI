@@ -8,8 +8,11 @@ import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
+import Condominiums from "@/pages/Condominiums";
 import Condominium from "@/pages/Condominium";
+import Reports from "@/pages/Reports";
 import AuditReport from "@/pages/AuditReport";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -35,8 +38,11 @@ function Router() {
       <div className="ml-64 min-h-screen">
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/condominiums" component={Condominiums} />
           <Route path="/condominium/:id" component={Condominium} />
+          <Route path="/reports" component={Reports} />
           <Route path="/audit-report/:id" component={AuditReport} />
+          <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
       </div>
