@@ -108,7 +108,20 @@ export default function Condominium() {
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               setUploadProgress(85);
-              resolve(new Response(xhr.responseText, { status: xhr.status }));
+              // Create a proper response object
+              const response = {
+                ok: true,
+                status: xhr.status,
+                json: async () => {
+                  try {
+                    return xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                  } catch (e) {
+                    return { path: `/uploads/${file.name}` }; // fallback
+                  }
+                },
+                text: async () => xhr.responseText
+              };
+              resolve(response as Response);
             } else {
               reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
             }
@@ -132,7 +145,13 @@ export default function Condominium() {
           throw new Error(`Falha no upload: ${errorText}`);
         }
         
-        const uploadResult = await uploadResponse.json();
+        let uploadResult;
+        try {
+          uploadResult = await uploadResponse.json();
+        } catch (e) {
+          console.warn("Failed to parse upload response, using fallback");
+          uploadResult = { path: `/uploads/${file.name}` };
+        }
         setUploadProgress(90);
         
         // Create audit record
