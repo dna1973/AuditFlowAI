@@ -1,4 +1,4 @@
-import { Building2, LayoutDashboard, FileText, Settings, ShieldCheck, Shield } from "lucide-react";
+import { Building2, Settings, ShieldCheck, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -6,19 +6,9 @@ import type { User } from "@shared/schema";
 
 const navigationItems = [
   {
-    name: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
     name: "Condomínios",
     href: "/condominiums",
     icon: Building2,
-  },
-  {
-    name: "Relatórios",
-    href: "/reports",
-    icon: FileText,
   },
   {
     name: "Configurações",
@@ -55,7 +45,7 @@ export function Sidebar() {
         {/* Navigation */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location === item.href || (location === "/" && item.href === "/condominiums");
             const Icon = item.icon;
             
             return (

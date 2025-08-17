@@ -4,12 +4,14 @@
 AuditFlow is a Software-as-a-Service (SaaS) platform for automated auditing of condominium financial statements. The application specializes in analyzing PDF documents of condominium accounting reports using AI to detect inconsistencies, generate insights, and provide professional audit reports. The platform serves multiple user roles: administrators with full CRUD permissions, managers handling multiple properties, and individual users focusing on specific lots within condominiums.
 
 ## Recent Updates (August 2025)
-- **Fixed DOM nesting warning** in Dashboard.tsx by removing redundant anchor tags
+- **Removed Dashboard and Reports pages** to simplify the application interface
+- **Implemented inadimplência (default rate) calculation** based on total condominium units vs units that paid
+- **Enhanced AI analysis** to extract payment compliance data and calculate default rates from PDF documents
+- **Added inadimplência visualization** with detailed lists of paying and defaulting units
+- **Simplified navigation** with Condomínios as the main page and streamlined menu structure
 - **Implemented comprehensive admin panel** with user management, role-based access, and audit report control
 - **Added user-condominium association system** with quadra (block) and lote (lot) identification
-- **Enhanced database schema** with user roles, user-condominium relationships, and improved audit tracking
-- **Resolved document analysis pipeline** with proper ObjectStorageService integration
-- **Added role-based navigation** showing admin menu only for administrative users
+- **Enhanced database schema** with inadimplência fields, user roles, and improved audit tracking
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
