@@ -88,9 +88,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const condominium = await storage.createCondominium(condominiumData);
       res.status(201).json(condominium);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating condominium:", error);
-      console.error("Detailed error:", error);
       res.status(400).json({ message: "Invalid condominium data", error: error.message });
     }
   });

@@ -147,20 +147,26 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-gray-700/50 max-w-md w-full">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold text-white flex items-center justify-between">
-            Novo Upload de Documento
+      <DialogContent className="sm:max-w-[500px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+        <DialogHeader className="space-y-3 pb-4">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <UploadCloud className="w-5 h-5 text-verde-accent" />
+              Novo Upload de Documento
+            </DialogTitle>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="p-2 hover:bg-white/10 rounded-lg"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               data-testid="button-close-modal"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </Button>
-          </DialogTitle>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Faça upload do arquivo PDF da prestação de contas para análise
+          </p>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -173,81 +179,90 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               onComplete={handleUploadComplete}
               buttonClassName="w-full"
             >
-              <div className="border-2 border-dashed border-white/30 rounded-xl p-8 text-center hover:border-verde-accent/50 transition-colors duration-200 bg-white/5">
-                <UploadCloud className="w-12 h-12 text-white/70 mx-auto mb-4" />
-                <p className="text-white font-medium mb-2">Arraste e solte o arquivo PDF aqui</p>
-                <p className="text-white/70 text-sm mb-4">ou clique para selecionar</p>
-                <div className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors duration-200 inline-block">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-verde-accent transition-colors duration-200 bg-gray-50 dark:bg-gray-800/50">
+                <UploadCloud className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-900 dark:text-white font-medium mb-2">Arraste e solte o arquivo PDF aqui</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">ou clique para selecionar</p>
+                <div className="px-4 py-2 bg-verde-accent text-white rounded-lg hover:bg-verde-accent/90 transition-colors duration-200 inline-block font-medium">
                   Selecionar Arquivo
                 </div>
               </div>
             </ObjectUploader>
             
             {uploadedFileUrl && (
-              <p className="text-verde-accent text-sm mt-2" data-testid="text-file-uploaded">
-                ✓ Arquivo PDF enviado com sucesso
-              </p>
+              <div className="flex items-center gap-2 mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <p className="text-green-700 dark:text-green-400 text-sm font-medium" data-testid="text-file-uploaded">
+                  Arquivo PDF enviado com sucesso
+                </p>
+              </div>
             )}
           </div>
 
           {/* Reference Period */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="block text-sm font-medium text-white mb-2">Mês</Label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full bg-white/10 border-white/20 text-white" data-testid="select-month">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="block text-sm font-medium text-white mb-2">Ano</Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-full bg-white/10 border-white/20 text-white" data-testid="select-year">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year.value} value={year.value}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Período de Referência</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mês</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-full" data-testid="select-month">
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ano</Label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-full" data-testid="select-year">
+                    <SelectValue placeholder="Selecione o ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year.value} value={year.value}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
           {/* Condominium Selection */}
-          <div>
-            <Label className="block text-sm font-medium text-white mb-2">Condomínio</Label>
-            <Select value={selectedCondominium} onValueChange={setSelectedCondominium}>
-              <SelectTrigger className="w-full bg-white/10 border-white/20 text-white" data-testid="select-condominium">
-                <SelectValue placeholder="Selecione o condomínio" />
-              </SelectTrigger>
-              <SelectContent>
-                {condominiums.map((condo) => (
-                  <SelectItem key={condo.id} value={condo.id}>
-                    {condo.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Condomínio</h3>
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selecione o condomínio</Label>
+              <Select value={selectedCondominium} onValueChange={setSelectedCondominium}>
+                <SelectTrigger className="w-full" data-testid="select-condominium">
+                  <SelectValue placeholder="Selecione o condomínio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {condominiums.map((condo) => (
+                    <SelectItem key={condo.id} value={condo.id}>
+                      {condo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-4">
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={handleClose}
-              className="flex-1 py-3 bg-white/20 text-white hover:bg-white/30"
+              className="flex-1"
               data-testid="button-cancel"
             >
               Cancelar
@@ -256,7 +271,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               type="button"
               onClick={handleSubmit}
               disabled={createAuditMutation.isPending}
-              className="flex-1 py-3 bg-verde-accent text-white hover:bg-green-600"
+              className="flex-1 bg-verde-accent hover:bg-verde-accent/90 text-white"
               data-testid="button-start-analysis"
             >
               {createAuditMutation.isPending ? "Processando..." : "Iniciar Análise"}
