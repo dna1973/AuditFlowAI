@@ -15,10 +15,12 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  console.log("Auth state:", { isAuthenticated, isLoading });
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-verde-accent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-white">Carregando...</div>
       </div>
     );
   }
