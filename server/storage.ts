@@ -16,7 +16,7 @@ import {
   type InsertUserCondominium,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -46,6 +46,8 @@ export interface IStorage {
   
   // User-Condominium associations
   createUserCondominium(association: InsertUserCondominium): Promise<UserCondominium>;
+  getAllUserCondominiums(): Promise<(UserCondominium & { userName: string; condominiumName: string })[]>;
+  deleteUserCondominium(id: string): Promise<void>;
   
   // Dashboard stats
   getDashboardStats(userId: string): Promise<any>;
@@ -191,6 +193,31 @@ export class DatabaseStorage implements IStorage {
       .values(associationData)
       .returning();
     return association;
+  }
+
+  async getAllUserCondominiums(): Promise<(UserCondominium & { userName: string; condominiumName: string })[]> {
+    const associations = await db
+      .select({
+        id: userCondominiums.id,
+        userId: userCondominiums.userId,
+        condominiumId: userCondominiums.condominiumId,
+        quadra: userCondominiums.quadra,
+        lote: userCondominiums.lote,
+        role: userCondominiums.role,
+        createdAt: userCondominiums.createdAt,
+        userName: sql<string>`CONCAT(COALESCE(${users.firstName}, ''), ' ', COALESCE(${users.lastName}, ''))`,
+        condominiumName: sql<string>`COALESCE(${condominiums.name}, 'Condomínio removido')`,
+      })
+      .from(userCondominiums)
+      .leftJoin(users, eq(userCondominiums.userId, users.id))
+      .leftJoin(condominiums, eq(userCondominiums.condominiumId, condominiums.id))
+      .orderBy(desc(userCondominiums.createdAt));
+    
+    return associations as (UserCondominium & { userName: string; condominiumName: string })[];
+  }
+
+  async deleteUserCondominium(id: string): Promise<void> {
+    await db.delete(userCondominiums).where(eq(userCondominiums.id, id));
   }
 
   async getDashboardStats(userId: string): Promise<any> {

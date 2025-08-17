@@ -71,6 +71,11 @@ export default function AdminPanel() {
     queryKey: ["/api/condominiums"],
   });
 
+  // Fetch user-condominium associations
+  const { data: associations = [], isLoading: associationsLoading } = useQuery<(UserCondominium & { userName: string; condominiumName: string })[]>({
+    queryKey: ["/api/admin/user-condominiums"],
+  });
+
   // Create/Update user mutation
   const userMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof userFormSchema> & { id?: string }) => {
@@ -110,11 +115,26 @@ export default function AdminPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/user-condominiums"] });
       setIsAssociationDialogOpen(false);
       toast({ title: "Sucesso", description: "Associação criada com sucesso!" });
     },
     onError: () => {
       toast({ title: "Erro", description: "Erro ao criar associação", variant: "destructive" });
+    }
+  });
+
+  // Delete association mutation
+  const deleteAssociationMutation = useMutation({
+    mutationFn: async (associationId: string) => {
+      return await apiRequest('DELETE', `/api/admin/user-condominiums/${associationId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/user-condominiums"] });
+      toast({ title: "Sucesso", description: "Associação removida com sucesso!" });
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Erro ao remover associação", variant: "destructive" });
     }
   });
 
@@ -453,8 +473,64 @@ export default function AdminPanel() {
             </Dialog>
           </div>
 
-          <div className="text-center py-8 text-gray-500">
-            Funcionalidade em desenvolvimento - Lista de associações de usuários
+          <div className="grid gap-4">
+            {associationsLoading ? (
+              <div className="text-center py-8">Carregando associações...</div>
+            ) : associations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Nenhuma associação encontrada
+              </div>
+            ) : (
+              associations.map((association) => (
+                <Card key={association.id} className="bg-light-card dark:bg-dark-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                          <Building className="w-6 h-6 text-blue-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg" data-testid={`text-association-${association.id}`}>
+                            {association.userName}
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-400">
+                            {association.condominiumName}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className="text-sm text-gray-500">
+                              Quadra: <strong>{association.quadra || 'N/A'}</strong>
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              Lote: <strong>{association.lote || 'N/A'}</strong>
+                            </span>
+                            <Badge 
+                              className={association.role === 'proprietario' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              }
+                            >
+                              {association.role === 'proprietario' ? 'Proprietário' : 'Inquilino'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteAssociationMutation.mutate(association.id)}
+                          disabled={deleteAssociationMutation.isPending}
+                          data-testid={`button-delete-association-${association.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 

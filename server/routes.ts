@@ -519,6 +519,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes - User-Condominium associations
+  app.get("/api/admin/user-condominiums", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const associations = await storage.getAllUserCondominiums();
+      res.json(associations);
+    } catch (error) {
+      console.error("Error fetching associations:", error);
+      res.status(500).json({ message: "Failed to fetch associations" });
+    }
+  });
+
   app.post("/api/admin/user-condominiums", isAuthenticated, async (req: any, res) => {
     try {
       const currentUser = await storage.getUser(req.user.claims.sub);
@@ -531,6 +546,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating association:", error);
       res.status(500).json({ message: "Failed to create association" });
+    }
+  });
+
+  app.delete("/api/admin/user-condominiums/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteUserCondominium(req.params.id);
+      res.json({ message: "Association deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting association:", error);
+      res.status(500).json({ message: "Failed to delete association" });
     }
   });
 
