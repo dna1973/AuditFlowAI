@@ -273,6 +273,46 @@ export class ObjectStorageService {
     
     await objectFile.delete();
   }
+
+  // Upload object to storage
+  async uploadObject(fileBuffer: Buffer, fileName: string, userId: string): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    if (!privateObjectDir) {
+      throw new Error(
+        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
+          "tool and set PRIVATE_OBJECT_DIR env var."
+      );
+    }
+
+    const objectId = randomUUID();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fullPath = `${privateObjectDir}/uploads/${objectId}/${sanitizedFileName}`;
+
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    // Upload the file buffer
+    await file.save(fileBuffer, {
+      metadata: {
+        contentType: 'application/pdf',
+        metadata: {
+          uploadedBy: userId,
+          originalName: fileName,
+          uploadedAt: new Date().toISOString()
+        }
+      }
+    });
+
+    // Set ACL policy for the uploaded object
+    const aclPolicy: ObjectAclPolicy = {
+      owner: userId,
+      visibility: "private"
+    };
+    await setObjectAclPolicy(file, aclPolicy);
+
+    return `/objects/uploads/${objectId}/${sanitizedFileName}`;
+  }
 }
 
 function parseObjectPath(path: string): {
