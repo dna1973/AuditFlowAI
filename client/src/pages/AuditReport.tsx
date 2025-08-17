@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, AlertTriangle, CheckCircle, XCircle, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowLeft, FileText, AlertTriangle, CheckCircle, XCircle, TrendingUp, DollarSign, Users, UserCheck } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,7 +76,7 @@ export default function AuditReport() {
       </div>
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card className="bg-light-card dark:bg-dark-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -113,9 +113,12 @@ export default function AuditReport() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Inconsistências</p>
-                <p className="text-2xl font-bold text-orange-600" data-testid="text-inconsistencies-count">
-                  {inconsistencies.length}
+                <p className="text-sm text-gray-600 dark:text-gray-400">Inadimplência</p>
+                <p className="text-2xl font-bold text-orange-600" data-testid="text-default-rate">
+                  {report.defaultRate ? `${Number(report.defaultRate).toFixed(1)}%` : 'N/A'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {report.defaultUnits || 0} de {report.totalUnits || 0} lotes
                 </p>
               </div>
               <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
@@ -124,7 +127,87 @@ export default function AuditReport() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-light-card dark:bg-dark-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Inconsistências</p>
+                <p className="text-2xl font-bold text-red-600" data-testid="text-inconsistencies-count">
+                  {inconsistencies.length}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center">
+                <XCircle className="w-6 h-6 text-red-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Inadimplência Details */}
+      {report.totalUnits && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="bg-light-card dark:bg-dark-card">
+            <CardHeader>
+              <CardTitle className="flex items-center text-green-600">
+                <UserCheck className="w-5 h-5 mr-2" />
+                Lotes Adimplentes ({report.paidUnits || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {report.paidUnitsList && Array.isArray(report.paidUnitsList) && report.paidUnitsList.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {report.paidUnitsList.slice(0, 20).map((unit: string, index: number) => (
+                    <Badge key={index} className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                      {unit}
+                    </Badge>
+                  ))}
+                  {report.paidUnitsList.length > 20 && (
+                    <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                      +{report.paidUnitsList.length - 20} mais
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-400">Dados não disponíveis no documento analisado</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-light-card dark:bg-dark-card">
+            <CardHeader>
+              <CardTitle className="flex items-center text-red-600">
+                <Users className="w-5 h-5 mr-2" />
+                Lotes Inadimplentes ({report.defaultUnits || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {report.defaultUnitsList && Array.isArray(report.defaultUnitsList) && report.defaultUnitsList.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {report.defaultUnitsList.slice(0, 20).map((unit: string, index: number) => (
+                    <Badge key={index} className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                      {unit}
+                    </Badge>
+                  ))}
+                  {report.defaultUnitsList.length > 20 && (
+                    <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                      +{report.defaultUnitsList.length - 20} mais
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-400">
+                  {report.defaultUnits && report.defaultUnits > 0 ? 
+                    'Calcular pela diferença dos lotes que pagaram' : 
+                    'Todos os lotes estão adimplentes'
+                  }
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Expense Categories */}
       {expenseCategories.length > 0 && (

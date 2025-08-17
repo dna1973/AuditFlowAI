@@ -81,6 +81,13 @@ export const auditReports = pgTable("audit_reports", {
   inconsistencies: jsonb("inconsistencies"), // Array of inconsistency objects
   findings: jsonb("findings"), // Array of findings with severity
   aiAnalysis: text("ai_analysis"),
+  // Inadimplência fields
+  totalUnits: integer("total_units"), // Total de lotes do condomínio
+  paidUnits: integer("paid_units"), // Quantidade de lotes que pagaram
+  defaultUnits: integer("default_units"), // Quantidade de lotes inadimplentes
+  defaultRate: decimal("default_rate", { precision: 5, scale: 2 }), // Percentual de inadimplência
+  paidUnitsList: jsonb("paid_units_list"), // Lista dos lotes que pagaram
+  defaultUnitsList: jsonb("default_units_list"), // Lista dos lotes inadimplentes
   createdAt: timestamp("created_at").defaultNow(),
 });
 

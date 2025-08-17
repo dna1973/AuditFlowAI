@@ -27,6 +27,13 @@ interface AuditAnalysis {
   expenseCategories: ExpenseCategory[];
   inconsistencies: Inconsistency[];
   summary: string;
+  // Inadimplência data
+  totalUnits?: number;
+  paidUnits?: number;
+  defaultUnits?: number;
+  defaultRate?: number;
+  paidUnitsList?: string[];
+  defaultUnitsList?: string[];
 }
 
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
@@ -76,7 +83,7 @@ function truncateText(text: string, maxTokens: number = 25000): string {
   return text.substring(0, maxChars) + "\n\n[DOCUMENTO TRUNCADO DEVIDO AO TAMANHO]";
 }
 
-export async function analyzeCondominiumAccounts(pdfText: string): Promise<AuditAnalysis> {
+export async function analyzeCondominiumAccounts(pdfText: string, condominiumUnits?: number): Promise<AuditAnalysis> {
   console.log("Starting AI analysis...");
   
   if (!pdfText || pdfText.trim().length === 0) {
@@ -88,6 +95,8 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
   const truncatedText = truncateText(pdfText);
   console.log("Text truncated for analysis, final length:", truncatedText.length);
   
+  const unitsInfo = condominiumUnits ? `\nTOTAL DE LOTES DO CONDOMÍNIO: ${condominiumUnits} lotes` : "";
+  
   const prompt = `
     Você é um auditor especializado em prestações de contas de condomínios. Analise o seguinte documento de prestação de contas e forneça uma análise detalhada.
 
@@ -96,6 +105,7 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
     - Receitas (taxas condominiais, receitas extraordinárias)
     - Despesas operacionais (manutenção, limpeza, segurança, energia, água, etc.)
     - Comprovantes de pagamento e notas fiscais
+    - INADIMPLÊNCIA: Identifique quais lotes/unidades pagaram a taxa condominial${unitsInfo}
 
     Documento para análise:
     ${truncatedText}
@@ -121,7 +131,18 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
           "severity": "baixa" | "media" | "alta" // Nível de criticidade
         }
       ],
-      "summary": string // Resumo geral da análise com valores específicos
+      "summary": string, // Resumo geral da análise com valores específicos
+      ${condominiumUnits ? `"totalUnits": ${condominiumUnits}, // Total de lotes do condomínio
+      "paidUnits": number, // Quantidade de lotes que pagaram (extrair do documento)
+      "defaultUnits": number, // Quantidade de lotes inadimplentes (totalUnits - paidUnits)
+      "defaultRate": number, // Percentual de inadimplência (defaultUnits/totalUnits * 100)
+      "paidUnitsList": [string], // Lista dos números dos lotes que pagaram (ex: ["101", "102", "203"])
+      "defaultUnitsList": [string], // Lista dos lotes inadimplentes (calcular a diferença)` : `"totalUnits": null,
+      "paidUnits": null,
+      "defaultUnits": null,
+      "defaultRate": null,
+      "paidUnitsList": null,
+      "defaultUnitsList": null`}
     }
 
     Instruções específicas:
@@ -133,6 +154,7 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
     6. Seja específico nas descrições das inconsistências
     7. Use apenas valores numéricos (ex: 1500.50, não "R$ 1.500,50")
     8. Se o documento contém tabelas ou listas de valores, some-os corretamente
+    ${condominiumUnits ? `9. ANÁLISE DE INADIMPLÊNCIA: Procure por listas de lotes que pagaram taxas condominiais, compare com o total de ${condominiumUnits} lotes e calcule a inadimplência` : ""}
   `;
 
   try {
@@ -186,6 +208,15 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
     }
     if (!result.summary) {
       result.summary = "Análise do documento de prestação de contas concluída";
+    }
+    
+    // Handle inadimplência fields
+    if (condominiumUnits) {
+      // Ensure inadimplência calculations are consistent
+      if (result.paidUnits && result.totalUnits) {
+        result.defaultUnits = result.totalUnits - result.paidUnits;
+        result.defaultRate = (result.defaultUnits / result.totalUnits) * 100;
+      }
     }
 
     console.log("Final analysis result:", {

@@ -13,6 +13,19 @@ async function processAuditDocument(auditId: string, documentPath: string) {
     console.log(`Processing audit document for audit ${auditId} at path ${documentPath}`);
     const objectStorageService = new ObjectStorageService();
     
+    // Get audit and condominium info for unit count
+    const audit = await storage.getAuditById(auditId);
+    if (!audit) {
+      throw new Error("Audit not found");
+    }
+    
+    const condominium = await storage.getCondominiumById(audit.condominiumId);
+    if (!condominium) {
+      throw new Error("Condominium not found");
+    }
+    
+    console.log(`Condominium ${condominium.name} has ${condominium.units} total units`);
+    
     // Download document from storage
     const objectFile = await objectStorageService.getObjectEntityFile(documentPath);
     const fileBuffer = await new Promise<Buffer>((resolve, reject) => {
@@ -29,9 +42,9 @@ async function processAuditDocument(auditId: string, documentPath: string) {
     const extractedText = await extractTextFromPDF(fileBuffer);
     console.log(`Text extraction completed. Text length: ${extractedText.length}`);
     
-    // Analyze with OpenAI
+    // Analyze with OpenAI (now including unit count for inadimplência analysis)
     console.log("Starting OpenAI analysis...");
-    const analysis = await analyzeCondominiumAccounts(extractedText);
+    const analysis = await analyzeCondominiumAccounts(extractedText, condominium.units);
     console.log("OpenAI analysis completed:", JSON.stringify(analysis, null, 2));
     
     // Create audit report
@@ -44,6 +57,13 @@ async function processAuditDocument(auditId: string, documentPath: string) {
       expenseCategories: analysis.expenseCategories || [],
       inconsistencies: analysis.inconsistencies || [],
       aiAnalysis: analysis.summary || "Análise não disponível",
+      // Inadimplência data
+      totalUnits: analysis.totalUnits || null,
+      paidUnits: analysis.paidUnits || null,
+      defaultUnits: analysis.defaultUnits || null,
+      defaultRate: analysis.defaultRate ? analysis.defaultRate.toString() : null,
+      paidUnitsList: analysis.paidUnitsList || null,
+      defaultUnitsList: analysis.defaultUnitsList || null,
     };
     
     console.log("Creating audit report with data:", JSON.stringify(reportData, null, 2));
