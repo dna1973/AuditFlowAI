@@ -81,16 +81,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/condominiums", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const condominiumData = insertCondominiumSchema.parse({
+      const condominiumData = {
         ...req.body,
         ownerId: userId,
-      });
+      };
       
       const condominium = await storage.createCondominium(condominiumData);
       res.status(201).json(condominium);
     } catch (error) {
       console.error("Error creating condominium:", error);
-      res.status(400).json({ message: "Invalid condominium data" });
+      console.error("Detailed error:", error);
+      res.status(400).json({ message: "Invalid condominium data", error: error.message });
     }
   });
 

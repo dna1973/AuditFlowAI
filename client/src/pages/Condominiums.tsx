@@ -31,6 +31,7 @@ export default function Condominiums() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: condominiums = [], isLoading } = useQuery<Condominium[]>({
     queryKey: ["/api/condominiums"],
@@ -41,13 +42,13 @@ export default function Condominiums() {
     defaultValues: {
       name: "",
       address: "",
-      units: 0,
+      units: 1,
       administrator: "",
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertCondominium) => {
+    mutationFn: async (data: any) => {
       const response = await fetch("/api/condominiums", {
         method: "POST",
         headers: {
@@ -55,7 +56,10 @@ export default function Condominiums() {
         },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("Erro ao criar condomínio");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao criar condomínio");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -86,10 +90,16 @@ export default function Condominiums() {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createMutation.mutate({
-      ...values,
-      ownerId: user?.id || "",
-    });
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createMutation.mutate(values);
   };
 
   if (isLoading) {
