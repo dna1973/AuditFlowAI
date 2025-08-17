@@ -457,41 +457,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const auditId = req.params.id;
       
+      console.log(`Attempting to delete audit ${auditId} for user ${userId}`);
+      
       // Get audit and verify ownership
       const audit = await storage.getAuditById(auditId);
       if (!audit) {
+        console.log(`Audit ${auditId} not found`);
         return res.status(404).json({ error: "Audit not found" });
       }
       
+      console.log(`Found audit: ${audit.id}, document path: ${audit.documentPath}`);
+      
       const condominium = await storage.getCondominiumById(audit.condominiumId);
       if (!condominium || condominium.ownerId !== userId) {
+        console.log(`Access denied for user ${userId} to condominium ${audit.condominiumId}`);
         return res.status(403).json({ error: "Access denied" });
       }
       
-      // Delete from object storage if exists
-      if (audit.documentPath) {
-        try {
-          const objectStorageService = new ObjectStorageService();
-          await objectStorageService.deleteObject(audit.documentPath, userId);
-        } catch (error) {
-          console.warn("Failed to delete object from storage:", error);
-        }
-      }
+      console.log(`Access verified for condominium: ${condominium.name}`);
       
       // Delete audit report first (if exists)
       try {
         const report = await storage.getAuditReportByAuditId(auditId);
         if (report) {
+          console.log(`Deleting audit report: ${report.id}`);
           await storage.deleteAuditReport(report.id);
+          console.log(`Audit report deleted successfully`);
+        } else {
+          console.log(`No audit report found for audit ${auditId}`);
         }
       } catch (error) {
         console.warn("Failed to delete audit report:", error);
       }
       
-      // Delete audit
-      await storage.deleteAudit(auditId);
+      // Delete from object storage if exists
+      if (audit.documentPath) {
+        try {
+          console.log(`Deleting object from storage: ${audit.documentPath}`);
+          const objectStorageService = new ObjectStorageService();
+          await objectStorageService.deleteObject(audit.documentPath, userId);
+          console.log(`Object deleted from storage successfully`);
+        } catch (error) {
+          console.warn("Failed to delete object from storage:", error);
+        }
+      } else {
+        console.log(`No document path found for audit ${auditId}`);
+      }
       
-      res.json({ message: "Audit deleted successfully" });
+      // Delete audit record
+      console.log(`Deleting audit record from database: ${auditId}`);
+      await storage.deleteAudit(auditId);
+      console.log(`Audit ${auditId} deleted successfully from database`);
+      
+      res.json({ 
+        message: "Audit deleted successfully",
+        auditId: auditId,
+        deletedDocument: !!audit.documentPath
+      });
     } catch (error) {
       console.error("Error deleting audit:", error);
       res.status(500).json({ error: "Failed to delete audit" });

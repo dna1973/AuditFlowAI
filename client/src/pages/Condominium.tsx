@@ -37,15 +37,31 @@ export default function Condominium() {
     mutationFn: async (auditId: string) => {
       return await apiRequest('DELETE', `/api/audits/${auditId}`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Audit deleted successfully:", data);
+      
+      // Invalidate all related queries to refresh the data immediately
       queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
-      toast({ title: "Sucesso", description: "Prestação de contas excluída com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums"] });
+      
+      // Force refetch of the audits list
+      queryClient.refetchQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
+      
+      toast({ 
+        title: "Sucesso", 
+        description: `Prestação de contas excluída com sucesso! ${data?.deletedDocument ? 'Arquivo removido do storage.' : ''}`,
+        duration: 3000
+      });
     },
     onError: (error) => {
+      console.error("Delete error:", error);
       toast({ 
         title: "Erro", 
         description: error.message || "Falha ao excluir prestação de contas",
-        variant: "destructive" 
+        variant: "destructive",
+        duration: 5000
       });
     },
   });
