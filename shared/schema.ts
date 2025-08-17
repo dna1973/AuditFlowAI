@@ -31,6 +31,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role").notNull().default("user"), // admin, manager, user
+  quadra: varchar("quadra"), // Quadra identification
+  lote: varchar("lote"), // Lote identification  
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -111,7 +115,22 @@ export const insertAuditSchema = createInsertSchema(audits).omit({
   uploadedAt: true,
 });
 
+// User-Condominium association table
+export const userCondominiums = pgTable("user_condominiums", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  condominiumId: varchar("condominium_id").notNull(),
+  quadra: varchar("quadra"), // Quadra for this specific condominium
+  lote: varchar("lote"), // Lote for this specific condominium
+  role: varchar("role").notNull().default("resident"), // resident, manager, admin
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertAuditReportSchema = createInsertSchema(auditReports).omit({
   id: true,
   createdAt: true,
 });
+
+// New type exports
+export type UserCondominium = typeof userCondominiums.$inferSelect;
+export type InsertUserCondominium = typeof userCondominiums.$inferInsert;

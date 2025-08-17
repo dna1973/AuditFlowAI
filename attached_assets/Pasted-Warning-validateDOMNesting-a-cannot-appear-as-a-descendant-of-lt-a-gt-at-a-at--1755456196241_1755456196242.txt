@@ -1,0 +1,39 @@
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:205:18
+    at div
+    at div
+    at div
+    at Dashboard (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/pages/Dashboard.tsx:29:53)
+    at Route (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:191:16)
+    at Switch (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:247:17)
+    at div
+    at div
+    at Router (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/App.tsx?v=fVXDRgr1ZFlIDoul680CG:36:42)
+    at Provider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5SZQWSWC.js?v=b218f8bd:48:15)
+    at TooltipProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=b218f8bd:59:5)
+    at ThemeProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/components/ThemeProvider.tsx:26:3)
+    at QueryClientProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=b218f8bd:2805:3)
+    at App
+at a
+at a
+at https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:205:18
+at div
+at div
+at div
+at Dashboard (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/pages/Dashboard.tsx:29:53)
+at Route (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:191:16)
+at Switch (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b218f8bd:247:17)
+at div
+at div
+at Router (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/App.tsx?v=fVXDRgr1ZFlIDoul680CG:36:42)
+at Provider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5SZQWSWC.js?v=b218f8bd:48:15)
+at TooltipProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=b218f8bd:59:5)
+at ThemeProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/src/components/ThemeProvider.tsx:26:3)
+at QueryClientProvider (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=b218f8bd:2805:3)
+at App
+at t.value (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://e4ec608e-10c6-4912-a281-334d188850fc-00-5hhha04aqssg.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400

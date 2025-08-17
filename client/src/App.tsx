@@ -13,6 +13,7 @@ import Condominium from "@/pages/Condominium";
 import Reports from "@/pages/Reports";
 import AuditReport from "@/pages/AuditReport";
 import Settings from "@/pages/Settings";
+import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/reports" component={Reports} />
           <Route path="/audit-report/:id" component={AuditReport} />
           <Route path="/settings" component={Settings} />
+          <Route path="/admin" component={AdminPanel} />
           <Route component={NotFound} />
         </Switch>
       </div>

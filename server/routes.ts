@@ -308,6 +308,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes - User management
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const user = await storage.createUser(req.body);
+      res.json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const user = await storage.updateUser(req.params.id, req.body);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteUser(req.params.id);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin routes - User-Condominium associations
+  app.post("/api/admin/user-condominiums", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const association = await storage.createUserCondominium(req.body);
+      res.json(association);
+    } catch (error) {
+      console.error("Error creating association:", error);
+      res.status(500).json({ message: "Failed to create association" });
+    }
+  });
+
+  // Admin routes - Audit reports management
+  app.get("/api/admin/audit-reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const reports = await storage.getAllAuditReports();
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching audit reports:", error);
+      res.status(500).json({ message: "Failed to fetch audit reports" });
+    }
+  });
+
+  app.delete("/api/admin/audit-reports/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteAuditReport(req.params.id);
+      res.json({ message: "Audit report deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting audit report:", error);
+      res.status(500).json({ message: "Failed to delete audit report" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

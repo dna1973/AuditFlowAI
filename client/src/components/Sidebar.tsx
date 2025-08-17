@@ -1,4 +1,4 @@
-import { Building2, LayoutDashboard, FileText, Settings, ShieldCheck } from "lucide-react";
+import { Building2, LayoutDashboard, FileText, Settings, ShieldCheck, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,16 @@ const navigationItems = [
 export function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  
+  // Add admin menu item if user is admin
+  const menuItems = user?.role === 'admin' ? [
+    ...navigationItems,
+    {
+      name: "Admin",
+      href: "/admin",
+      icon: Shield,
+    },
+  ] : navigationItems;
 
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-white/10 dark:bg-black/20 backdrop-blur-lg border-r border-white/20 dark:border-gray-700/50 z-50">
@@ -44,7 +54,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="space-y-2">
-          {navigationItems.map((item) => {
+          {menuItems.map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
             

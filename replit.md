@@ -1,7 +1,15 @@
 # replit.md
 
 ## Overview
-AuditFlow is a Software-as-a-Service (SaaS) platform for automated auditing of condominium financial statements. The application specializes in analyzing PDF documents of condominium accounting reports using AI to detect inconsistencies, generate insights, and provide professional audit reports. The platform serves two primary user types: condominium administrators managing multiple properties and individual condominium auditors/council members focusing on single properties.
+AuditFlow is a Software-as-a-Service (SaaS) platform for automated auditing of condominium financial statements. The application specializes in analyzing PDF documents of condominium accounting reports using AI to detect inconsistencies, generate insights, and provide professional audit reports. The platform serves multiple user roles: administrators with full CRUD permissions, managers handling multiple properties, and individual users focusing on specific lots within condominiums.
+
+## Recent Updates (August 2025)
+- **Fixed DOM nesting warning** in Dashboard.tsx by removing redundant anchor tags
+- **Implemented comprehensive admin panel** with user management, role-based access, and audit report control
+- **Added user-condominium association system** with quadra (block) and lote (lot) identification
+- **Enhanced database schema** with user roles, user-condominium relationships, and improved audit tracking
+- **Resolved document analysis pipeline** with proper ObjectStorageService integration
+- **Added role-based navigation** showing admin menu only for administrative users
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

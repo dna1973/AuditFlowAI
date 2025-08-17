@@ -150,37 +150,35 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {condominiums.map((condo: any) => (
               <Link key={condo.id} href={`/condominium/${condo.id}`}>
-                <a>
-                  <Card className="bg-light-card dark:bg-dark-card hover:shadow-lg hover:border-verde-accent/30 transition-all duration-200 cursor-pointer group" data-testid={`card-condominium-${condo.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center group-hover:bg-verde-accent/10 transition-colors duration-200">
-                          <Building2 className="w-6 h-6 text-blue-500 group-hover:text-verde-accent transition-colors duration-200" />
-                        </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          condo.status === "active" 
-                            ? "bg-verde-accent/10 text-verde-accent" 
-                            : "bg-gray-500/10 text-gray-500"
-                        }`}>
-                          {condo.status === "active" ? "Ativo" : "Inativo"}
-                        </span>
+                <Card className="bg-light-card dark:bg-dark-card hover:shadow-lg hover:border-verde-accent/30 transition-all duration-200 cursor-pointer group" data-testid={`card-condominium-${condo.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center group-hover:bg-verde-accent/10 transition-colors duration-200">
+                        <Building2 className="w-6 h-6 text-blue-500 group-hover:text-verde-accent transition-colors duration-200" />
                       </div>
-                      <h3 className="font-semibold text-lg mb-2" data-testid={`text-condominium-name-${condo.id}`}>
-                        {condo.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3" data-testid={`text-condominium-cnpj-${condo.id}`}>
-                        CNPJ: {condo.cnpj}
-                      </p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Última auditoria:</span>
-                        <span className="font-medium">
-                          {/* This would need to be calculated from audits data */}
-                          --
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </a>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        condo.status === "active" 
+                          ? "bg-verde-accent/10 text-verde-accent" 
+                          : "bg-gray-500/10 text-gray-500"
+                      }`}>
+                        {condo.status === "active" ? "Ativo" : "Inativo"}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2" data-testid={`text-condominium-name-${condo.id}`}>
+                      {condo.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3" data-testid={`text-condominium-cnpj-${condo.id}`}>
+                      CNPJ: {condo.cnpj}
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Última auditoria:</span>
+                      <span className="font-medium">
+                        {/* This would need to be calculated from audits data */}
+                        --
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
           </div>
