@@ -202,6 +202,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reprocess failed audit
+  app.post("/api/audits/:id/reprocess", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const auditId = req.params.id;
+      
+      // Get audit and verify ownership
+      const audit = await storage.getAuditById(auditId);
+      if (!audit) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      const condominium = await storage.getCondominiumById(audit.condominiumId);
+      if (!condominium || condominium.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!audit.documentPath) {
+        return res.status(400).json({ error: "No document found for this audit" });
+      }
+      
+      // Set status to processing and start reprocessing
+      await storage.updateAuditStatus(auditId, "processing");
+      
+      // Start async processing with the stored document path
+      processAuditDocument(auditId, "").catch(error => {
+        console.error("Error reprocessing audit document:", error);
+        storage.updateAuditStatus(auditId, "error");
+      });
+      
+      res.json({ message: "Audit reprocessing started" });
+    } catch (error) {
+      console.error("Error reprocessing audit:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Get audit report
   app.get("/api/audits/:id/report", isAuthenticated, async (req: any, res) => {
     try {
@@ -277,13 +314,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 async function processAuditDocument(auditId: string, documentUrl: string) {
   try {
-    // Download document from storage
-    const response = await fetch(documentUrl);
-    if (!response.ok) {
-      throw new Error("Failed to download document");
+    console.log(`Starting audit processing for ${auditId}`);
+    
+    // Get the audit to get the document path
+    const audit = await storage.getAuditById(auditId);
+    if (!audit || !audit.documentPath) {
+      console.log(`Document path not found for audit ${auditId}:`, audit?.documentPath);
+      throw new Error("Document path not found in audit");
     }
     
-    const buffer = Buffer.from(await response.arrayBuffer());
+    console.log(`Using document path: ${audit.documentPath}`);
+
+    // Download document from object storage using the service
+    const objectStorageService = new ObjectStorageService();
+    console.log(`Getting object file for path: ${audit.documentPath}`);
+    const objectFile = await objectStorageService.getObjectEntityFile(audit.documentPath);
+    
+    console.log(`Object file obtained, starting download...`);
+    
+    // Download the file content
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const stream = objectFile.createReadStream();
+      
+      stream.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      
+      stream.on('end', () => {
+        console.log(`File downloaded successfully, size: ${Buffer.concat(chunks).length} bytes`);
+        resolve(Buffer.concat(chunks));
+      });
+      
+      stream.on('error', (error) => {
+        console.log(`Error downloading file:`, error);
+        reject(error);
+      });
+    });
     
     // Extract text from PDF
     const pdfText = await extractTextFromPDF(buffer);
