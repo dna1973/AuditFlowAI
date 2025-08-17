@@ -25,23 +25,28 @@ async function processAuditDocument(auditId: string, documentPath: string) {
     });
     
     // Extract text from PDF
+    console.log("Extracting text from PDF...");
     const extractedText = await extractTextFromPDF(fileBuffer);
+    console.log(`Text extraction completed. Text length: ${extractedText.length}`);
     
     // Analyze with OpenAI
+    console.log("Starting OpenAI analysis...");
     const analysis = await analyzeCondominiumAccounts(extractedText);
+    console.log("OpenAI analysis completed:", JSON.stringify(analysis, null, 2));
     
     // Create audit report
     const reportData = {
       auditId,
-      totalBalance: analysis.totalBalance ? analysis.totalBalance.toString() : null,
-      totalExpenses: analysis.totalExpenses ? analysis.totalExpenses.toString() : null,
-      biggestExpense: analysis.biggestExpense ? analysis.biggestExpense.toString() : null,
-      biggestExpenseDescription: analysis.biggestExpenseDescription || null,
+      totalBalance: analysis.totalBalance ? analysis.totalBalance.toString() : "0",
+      totalExpenses: analysis.totalExpenses ? analysis.totalExpenses.toString() : "0",
+      biggestExpense: analysis.biggestExpense ? analysis.biggestExpense.toString() : "0",
+      biggestExpenseDescription: analysis.biggestExpenseDescription || "Não identificado",
       expenseCategories: analysis.expenseCategories || [],
       inconsistencies: analysis.inconsistencies || [],
-      aiAnalysis: analysis.summary || "",
+      aiAnalysis: analysis.summary || "Análise não disponível",
     };
     
+    console.log("Creating audit report with data:", JSON.stringify(reportData, null, 2));
     await storage.createAuditReport(reportData);
     await storage.updateAuditStatus(auditId, "completed");
     

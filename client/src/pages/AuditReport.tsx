@@ -18,10 +18,12 @@ export default function AuditReport() {
   const [match, params] = useRoute("/audit-report/:id");
   const auditId = params?.id;
 
-  const { data: report, isLoading } = useQuery<AuditReport>({
+  const { data: reportData, isLoading } = useQuery<{audit: any, report: AuditReport, condominium: any}>({
     queryKey: ["/api/audits", auditId, "report"],
     enabled: !!auditId,
   });
+
+  const report = reportData?.report;
 
   if (isLoading) {
     return (

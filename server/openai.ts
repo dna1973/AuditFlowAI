@@ -35,14 +35,18 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
     pdfExtract.extractBuffer(pdfBuffer, {}, (err, data) => {
       if (err) {
+        console.error("PDF extraction error:", err);
         reject(err);
         return;
       }
       
       if (!data) {
+        console.error("No data extracted from PDF");
         reject(new Error("No data extracted from PDF"));
         return;
       }
+      
+      console.log(`PDF has ${data.pages.length} pages`);
       
       // Extract text from all pages
       const text = data.pages
@@ -52,6 +56,9 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             .join(' ')
         )
         .join('\n');
+      
+      console.log(`Extracted text length: ${text.length} characters`);
+      console.log("First 500 characters of extracted text:", text.substring(0, 500));
       
       resolve(text);
     });
@@ -70,26 +77,40 @@ function truncateText(text: string, maxTokens: number = 25000): string {
 }
 
 export async function analyzeCondominiumAccounts(pdfText: string): Promise<AuditAnalysis> {
+  console.log("Starting AI analysis...");
+  
+  if (!pdfText || pdfText.trim().length === 0) {
+    console.error("PDF text is empty or undefined");
+    throw new Error("Texto extraído do PDF está vazio");
+  }
+
   // Truncate text to fit within token limits
   const truncatedText = truncateText(pdfText);
+  console.log("Text truncated for analysis, final length:", truncatedText.length);
   
   const prompt = `
     Você é um auditor especializado em prestações de contas de condomínios. Analise o seguinte documento de prestação de contas e forneça uma análise detalhada.
+
+    IMPORTANTE: Extraia os valores numéricos reais do documento. Procure por:
+    - Saldos bancários e financeiros
+    - Receitas (taxas condominiais, receitas extraordinárias)
+    - Despesas operacionais (manutenção, limpeza, segurança, energia, água, etc.)
+    - Comprovantes de pagamento e notas fiscais
 
     Documento para análise:
     ${truncatedText}
 
     Por favor, forneça uma análise completa no seguinte formato JSON:
     {
-      "totalBalance": number, // Balanço total em reais
-      "totalExpenses": number, // Total de despesas em reais
-      "biggestExpense": number, // Maior gasto individual em reais
+      "totalBalance": number, // Balanço total em reais (valor numérico)
+      "totalExpenses": number, // Total de despesas em reais (valor numérico)
+      "biggestExpense": number, // Maior gasto individual em reais (valor numérico)
       "biggestExpenseDescription": string, // Descrição do maior gasto
       "expenseCategories": [
         {
           "name": string, // Nome da categoria (ex: "Manutenção", "Limpeza", "Segurança")
-          "amount": number, // Valor gasto na categoria
-          "percentage": number // Percentual do total
+          "amount": number, // Valor gasto na categoria (valor numérico)
+          "percentage": number // Percentual do total (valor numérico)
         }
       ],
       "inconsistencies": [
@@ -100,24 +121,29 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
           "severity": "baixa" | "media" | "alta" // Nível de criticidade
         }
       ],
-      "summary": string // Resumo geral da análise
+      "summary": string // Resumo geral da análise com valores específicos
     }
 
     Instruções específicas:
-    1. Identifique discrepâncias matemáticas, comprovantes ausentes, gastos atípicos
-    2. Categorize as despesas em grupos lógicos (manutenção, limpeza, segurança, etc.)
-    3. Calcule percentuais com precisão
-    4. Seja específico nas descrições das inconsistências
-    5. Use valores monetários em reais (sem formatação)
+    1. SEMPRE extraia valores numéricos reais do documento, nunca use zeros
+    2. Se não conseguir encontrar valores específicos, estime baseado no contexto
+    3. Identifique discrepâncias matemáticas, comprovantes ausentes, gastos atípicos
+    4. Categorize as despesas em grupos lógicos (manutenção, limpeza, segurança, etc.)
+    5. Calcule percentuais com precisão baseado nos valores encontrados
+    6. Seja específico nas descrições das inconsistências
+    7. Use apenas valores numéricos (ex: 1500.50, não "R$ 1.500,50")
+    8. Se o documento contém tabelas ou listas de valores, some-os corretamente
   `;
 
   try {
+    console.log("Sending request to OpenAI...");
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "Você é um auditor especializado em prestações de contas de condomínios. Responda sempre em JSON válido no formato solicitado."
+          content: "Você é um auditor especializado em prestações de contas de condomínios. Sua tarefa é extrair valores numéricos reais do documento e nunca retornar zeros. Responda sempre em JSON válido no formato solicitado."
         },
         {
           role: "user",
@@ -126,22 +152,56 @@ export async function analyzeCondominiumAccounts(pdfText: string): Promise<Audit
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
+      max_tokens: 4000
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const rawResponse = response.choices[0].message.content || "{}";
+    console.log("OpenAI response received, parsing JSON...");
+    console.log("Raw AI response:", rawResponse);
+
+    const result = JSON.parse(rawResponse);
+    console.log("Parsed AI result:", JSON.stringify(result, null, 2));
     
-    // Validate and ensure required fields
-    if (!result.totalBalance) result.totalBalance = 0;
-    if (!result.totalExpenses) result.totalExpenses = 0;
-    if (!result.biggestExpense) result.biggestExpense = 0;
-    if (!result.biggestExpenseDescription) result.biggestExpenseDescription = "Não identificado";
-    if (!result.expenseCategories) result.expenseCategories = [];
-    if (!result.inconsistencies) result.inconsistencies = [];
-    if (!result.summary) result.summary = "Análise concluída";
+    // Validate and ensure required fields with meaningful defaults only if truly needed
+    if (result.totalBalance === undefined || result.totalBalance === null) {
+      console.warn("totalBalance missing from AI response");
+      result.totalBalance = 0;
+    }
+    if (result.totalExpenses === undefined || result.totalExpenses === null) {
+      console.warn("totalExpenses missing from AI response");
+      result.totalExpenses = 0;
+    }
+    if (result.biggestExpense === undefined || result.biggestExpense === null) {
+      console.warn("biggestExpense missing from AI response");
+      result.biggestExpense = 0;
+    }
+    if (!result.biggestExpenseDescription) {
+      result.biggestExpenseDescription = "Não identificado no documento";
+    }
+    if (!result.expenseCategories) {
+      result.expenseCategories = [];
+    }
+    if (!result.inconsistencies) {
+      result.inconsistencies = [];
+    }
+    if (!result.summary) {
+      result.summary = "Análise do documento de prestação de contas concluída";
+    }
+
+    console.log("Final analysis result:", {
+      totalBalance: result.totalBalance,
+      totalExpenses: result.totalExpenses,
+      biggestExpense: result.biggestExpense,
+      categoriesCount: result.expenseCategories.length,
+      inconsistenciesCount: result.inconsistencies.length
+    });
 
     return result as AuditAnalysis;
   } catch (error) {
     console.error("Error analyzing PDF with OpenAI:", error);
-    throw new Error("Falha na análise do documento. Tente novamente.");
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
+    throw new Error(`Falha na análise do documento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
