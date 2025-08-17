@@ -31,17 +31,20 @@ const months = [
   { value: "12", label: "Dezembro" },
 ];
 
-const years = [
-  { value: "2024", label: "2024" },
-  { value: "2023", label: "2023" },
-  { value: "2022", label: "2022" },
-];
+// Generate years from 2020 to current year + 1
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 2019 }, (_, i) => {
+  const year = (currentYear + 1 - i).toString();
+  return { value: year, label: year };
+});
 
 export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedCondominium, setSelectedCondominium] = useState("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploadedFileSize, setUploadedFileSize] = useState(0);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -108,8 +111,11 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   const handleUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
-      const uploadURL = result.successful[0].uploadURL as string;
+      const file = result.successful[0];
+      const uploadURL = file.uploadURL as string;
       setUploadedFileUrl(uploadURL);
+      setUploadedFileName(file.name || "document.pdf");
+      setUploadedFileSize(file.size || 0);
       
       toast({
         title: "Arquivo enviado",
@@ -133,6 +139,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       condominiumId: selectedCondominium,
       month: parseInt(selectedMonth),
       year: parseInt(selectedYear),
+      fileName: uploadedFileName,
+      fileSize: uploadedFileSize,
       status: "pending",
     });
   };
@@ -142,6 +150,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setSelectedYear("");
     setSelectedCondominium("");
     setUploadedFileUrl("");
+    setUploadedFileName("");
+    setUploadedFileSize(0);
     onClose();
   };
 
