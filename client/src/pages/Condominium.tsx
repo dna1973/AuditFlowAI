@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Link, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -30,6 +31,8 @@ export default function Condominium() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: condominium } = useQuery<Condominium>({
@@ -79,33 +82,74 @@ export default function Condominium() {
   // Upload audit mutation
   const uploadAuditMutation = useMutation({
     mutationFn: async ({ file, month, year }: { file: File; month: string; year: string }) => {
-      // Get upload URL
-      const uploadUrlResponse: any = await apiRequest('POST', '/api/objects/upload');
-      const uploadURL = uploadUrlResponse.uploadURL;
+      setIsUploading(true);
+      setUploadProgress(10);
       
-      // Upload file
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error('Falha no upload do arquivo');
+      try {
+        // Get upload URL
+        const uploadUrlResponse: any = await apiRequest('POST', '/api/objects/upload');
+        const uploadURL = uploadUrlResponse.uploadURL;
+        setUploadProgress(20);
+        
+        // Upload file with progress tracking
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await new Promise<Response>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded * 60) / event.total) + 20; // 20-80%
+              setUploadProgress(progress);
+            }
+          });
+          
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              setUploadProgress(85);
+              resolve(new Response(xhr.responseText, { status: xhr.status }));
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+            }
+          });
+          
+          xhr.addEventListener('error', () => {
+            reject(new Error('Erro de rede durante o upload'));
+          });
+          
+          xhr.addEventListener('timeout', () => {
+            reject(new Error('Timeout durante o upload'));
+          });
+          
+          xhr.open('POST', uploadURL);
+          xhr.timeout = 300000; // 5 minutes timeout
+          xhr.send(formData);
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          throw new Error(`Falha no upload: ${errorText}`);
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        setUploadProgress(90);
+        
+        // Create audit record
+        const auditResult = await apiRequest('POST', '/api/audits', {
+          condominiumId,
+          month,
+          year: parseInt(year),
+          fileName: file.name,
+          documentPath: uploadResult.path || `/uploads/${file.name}`,
+          fileSize: file.size,
+        });
+        
+        setUploadProgress(100);
+        return auditResult;
+      } finally {
+        setIsUploading(false);
       }
-      
-      const uploadResult = await uploadResponse.json();
-      
-      // Create audit record
-      return await apiRequest('POST', '/api/audits', {
-        condominiumId,
-        month,
-        year: parseInt(year),
-        fileName: file.name,
-        documentPath: uploadResult.path,
-      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
@@ -122,11 +166,14 @@ export default function Condominium() {
       setSelectedFile(null);
       setMonth("");
       setYear(new Date().getFullYear().toString());
+      setUploadProgress(0);
     },
     onError: (error) => {
       console.error("Upload error:", error);
+      setIsUploading(false);
+      setUploadProgress(0);
       toast({
-        title: "Erro",
+        title: "Erro no Upload",
         description: error.message || "Falha ao enviar prestação de contas",
         variant: "destructive",
         duration: 5000
@@ -310,14 +357,39 @@ export default function Condominium() {
                   </div>
                 </div>
               </div>
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progresso do upload</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="w-full" />
+                  <p className="text-xs text-gray-500 text-center">
+                    {uploadProgress < 20 && "Preparando upload..."}
+                    {uploadProgress >= 20 && uploadProgress < 80 && "Enviando arquivo..."}
+                    {uploadProgress >= 80 && uploadProgress < 90 && "Processando..."}
+                    {uploadProgress >= 90 && uploadProgress < 100 && "Criando auditoria..."}
+                    {uploadProgress === 100 && "Concluído!"}
+                  </p>
+                </div>
+              )}
+              
               <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsUploadDialogOpen(false)}
+                  disabled={isUploading}
+                  data-testid="button-cancel-upload"
+                >
+                  {isUploading ? "Aguarde..." : "Cancelar"}
+                </Button>
                 <Button 
                   type="submit" 
                   onClick={handleUploadSubmit}
-                  disabled={uploadAuditMutation.isPending || !selectedFile || !month || !year}
+                  disabled={isUploading || !selectedFile || !month || !year}
                   data-testid="button-submit-upload"
                 >
-                  {uploadAuditMutation.isPending ? "Enviando..." : "Enviar"}
+                  {isUploading ? `Enviando ${uploadProgress}%` : "Enviar"}
                 </Button>
               </DialogFooter>
             </DialogContent>
