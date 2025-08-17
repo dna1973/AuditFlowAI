@@ -1,14 +1,19 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Calendar, CheckCircle, Download, Trash2, Eye, AlertTriangle } from "lucide-react";
+import { ArrowLeft, FileText, Calendar, CheckCircle, Download, Trash2, Eye, AlertTriangle, Plus, Upload } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Condominium, Audit } from "@shared/schema";
+import { useState, useRef } from "react";
 
 const statusConfig = {
   pending: { label: "Pendente", className: "bg-yellow-500/10 text-yellow-600" },
@@ -21,6 +26,11 @@ export default function Condominium() {
   const [match, params] = useRoute("/condominium/:id");
   const condominiumId = params?.id;
   const { toast } = useToast();
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: condominium } = useQuery<Condominium>({
     queryKey: ["/api/condominiums", condominiumId],
@@ -51,7 +61,7 @@ export default function Condominium() {
       
       toast({ 
         title: "Sucesso", 
-        description: `Prestação de contas excluída com sucesso! ${data?.deletedDocument ? 'Arquivo removido do storage.' : ''}`,
+        description: `Prestação de contas excluída com sucesso! ${(data as any)?.deletedDocument ? 'Arquivo removido do storage.' : ''}`,
         duration: 3000
       });
     },
@@ -65,6 +75,105 @@ export default function Condominium() {
       });
     },
   });
+
+  // Upload audit mutation
+  const uploadAuditMutation = useMutation({
+    mutationFn: async ({ file, month, year }: { file: File; month: string; year: string }) => {
+      // Get upload URL
+      const uploadUrlResponse = await apiRequest('POST', '/api/objects/upload');
+      const { uploadURL } = uploadUrlResponse as { uploadURL: string };
+      
+      // Upload file
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await fetch(uploadURL, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Falha no upload do arquivo');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      
+      // Create audit record
+      return await apiRequest('POST', '/api/audits', {
+        condominiumId,
+        month,
+        year: parseInt(year),
+        fileName: file.name,
+        documentPath: uploadResult.path,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      toast({
+        title: "Sucesso",
+        description: "Prestação de contas enviada com sucesso! A análise será iniciada em breve.",
+        duration: 3000
+      });
+      
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      setMonth("");
+      setYear(new Date().getFullYear().toString());
+    },
+    onError: (error) => {
+      console.error("Upload error:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao enviar prestação de contas",
+        variant: "destructive",
+        duration: 5000
+      });
+    },
+  });
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione apenas arquivos PDF",
+          variant: "destructive",
+          duration: 3000
+        });
+        return;
+      }
+      
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast({
+          title: "Erro",
+          description: "O arquivo deve ter menos de 50MB",
+          variant: "destructive",
+          duration: 3000
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadSubmit = () => {
+    if (!selectedFile || !month || !year) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos e selecione um arquivo",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
+    
+    uploadAuditMutation.mutate({ file: selectedFile, month, year });
+  };
 
   const handleDownloadPdf = async (audit: Audit) => {
     if (!audit.documentPath) {
@@ -126,10 +235,94 @@ export default function Condominium() {
             Voltar ao Dashboard
           </Button>
         </Link>
-        <Header 
-          title={condominium.name}
-          subtitle="Visualize todas as prestações de contas e relatórios de auditoria"
-        />
+        <div className="flex justify-between items-start">
+          <Header 
+            title={condominium.name}
+            subtitle="Visualize todas as prestações de contas e relatórios de auditoria"
+          />
+          
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-verde-accent hover:bg-green-600 text-white" data-testid="button-upload-document">
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Prestação de Contas
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Upload de Prestação de Contas</DialogTitle>
+                <DialogDescription>
+                  Envie um arquivo PDF com a prestação de contas para análise automatizada.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="month" className="text-right">
+                    Mês
+                  </Label>
+                  <Input
+                    id="month"
+                    placeholder="Ex: 01"
+                    className="col-span-3"
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    maxLength={2}
+                    data-testid="input-month"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="year" className="text-right">
+                    Ano
+                  </Label>
+                  <Input
+                    id="year"
+                    placeholder="Ex: 2025"
+                    className="col-span-3"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    maxLength={4}
+                    data-testid="input-year"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="file" className="text-right">
+                    Arquivo PDF
+                  </Label>
+                  <div className="col-span-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      data-testid="input-file"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full"
+                      data-testid="button-select-file"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {selectedFile ? selectedFile.name : "Selecionar arquivo"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  type="submit" 
+                  onClick={handleUploadSubmit}
+                  disabled={uploadAuditMutation.isPending || !selectedFile || !month || !year}
+                  data-testid="button-submit-upload"
+                >
+                  {uploadAuditMutation.isPending ? "Enviando..." : "Enviar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Condominium Stats */}
@@ -253,16 +446,41 @@ export default function Condominium() {
                           </Button>
                           
                           {/* Delete Audit */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteAuditMutation.mutate(audit.id)}
-                            disabled={deleteAuditMutation.isPending}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            data-testid={`button-delete-${audit.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={deleteAuditMutation.isPending}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                data-testid={`button-delete-${audit.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir esta prestação de contas de <strong>{audit.month}/{audit.year}</strong>?
+                                  <br /><br />
+                                  Esta ação não pode ser desfeita e todos os dados relacionados (incluindo relatórios de auditoria) serão permanentemente removidos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel data-testid={`button-cancel-delete-${audit.id}`}>
+                                  Cancelar
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteAuditMutation.mutate(audit.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                  data-testid={`button-confirm-delete-${audit.id}`}
+                                >
+                                  {deleteAuditMutation.isPending ? "Excluindo..." : "Excluir"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                           
                           {/* Show error tooltip if needed */}
                           {audit.status === 'error' && (
