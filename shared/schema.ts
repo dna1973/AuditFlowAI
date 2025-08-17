@@ -61,7 +61,7 @@ export const audits = pgTable("audits", {
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   fileName: varchar("file_name").notNull(),
-  fileSize: integer("file_size").notNull(),
+  fileSize: integer("file_size"),
   documentPath: varchar("document_path"), // Object storage path
   status: varchar("status").notNull().default("pending"), // pending, processing, completed, error
   uploadedAt: timestamp("uploaded_at").defaultNow(),

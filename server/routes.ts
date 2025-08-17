@@ -6,6 +6,45 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { insertCondominiumSchema, insertAuditSchema } from "@shared/schema";
 import { analyzeCondominiumAccounts, extractTextFromPDF } from "./openai";
+
+// Process audit document function
+async function processAuditDocument(auditId: string, documentPath: string) {
+  try {
+    console.log(`Processing audit document for audit ${auditId} at path ${documentPath}`);
+    const objectStorageService = new ObjectStorageService();
+    
+    // Download document from storage
+    const fileBuffer = await objectStorageService.getFile(documentPath);
+    
+    // Extract text from PDF
+    const extractedText = await extractTextFromPDF(fileBuffer);
+    
+    // Analyze with OpenAI
+    const analysis = await analyzeCondominiumAccounts(extractedText);
+    
+    // Create audit report
+    const reportData = {
+      auditId,
+      totalBalance: analysis.totalBalance ? parseFloat(analysis.totalBalance.toString()) : null,
+      totalExpenses: analysis.totalExpenses ? parseFloat(analysis.totalExpenses.toString()) : null,
+      biggestExpense: analysis.biggestExpense ? parseFloat(analysis.biggestExpense.toString()) : null,
+      biggestExpenseDescription: analysis.biggestExpenseDescription || null,
+      expenseCategories: analysis.expenseCategories || [],
+      inconsistencies: analysis.inconsistencies || [],
+      findings: analysis.findings || [],
+      aiAnalysis: analysis.summary || "",
+    };
+    
+    await storage.createAuditReport(reportData);
+    await storage.updateAuditStatus(auditId, "completed");
+    
+    console.log(`Audit processing completed for ${auditId}`);
+  } catch (error) {
+    console.error(`Error processing audit ${auditId}:`, error);
+    await storage.updateAuditStatus(auditId, "error");
+    throw error;
+  }
+}
 import multer from "multer";
 
 // Configure multer for file uploads
@@ -137,17 +176,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const auditData = insertAuditSchema.parse(req.body);
       
+      console.log("Creating audit with data:", auditData);
+      
       // Verify user owns the condominium
       const condominium = await storage.getCondominiumById(auditData.condominiumId);
       if (!condominium || condominium.ownerId !== userId) {
+        console.log("Access denied for user", userId, "to condominium", auditData.condominiumId);
         return res.status(403).json({ message: "Access denied" });
       }
       
       const audit = await storage.createAudit(auditData);
+      console.log("Audit created:", audit.id);
+      
+      // Start processing immediately
+      if (audit.documentPath) {
+        console.log("Starting document processing for audit:", audit.id);
+        // Process document asynchronously
+        processAuditDocument(audit.id, audit.documentPath).catch(error => {
+          console.error("Background processing failed:", error);
+          // Update audit status to error
+          storage.updateAuditStatus(audit.id, "error").catch(console.error);
+        });
+        
+        // Update status to processing
+        await storage.updateAuditStatus(audit.id, "processing");
+      }
+      
       res.status(201).json(audit);
     } catch (error) {
       console.error("Error creating audit:", error);
-      res.status(400).json({ message: "Invalid audit data" });
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(400).json({ message: "Invalid audit data" });
+      }
     }
   });
 
@@ -522,72 +584,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
-}
-
-async function processAuditDocument(auditId: string, documentUrl: string) {
-  try {
-    console.log(`Starting audit processing for ${auditId}`);
-    
-    // Get the audit to get the document path
-    const audit = await storage.getAuditById(auditId);
-    if (!audit || !audit.documentPath) {
-      console.log(`Document path not found for audit ${auditId}:`, audit?.documentPath);
-      throw new Error("Document path not found in audit");
-    }
-    
-    console.log(`Using document path: ${audit.documentPath}`);
-
-    // Download document from object storage using the service
-    const objectStorageService = new ObjectStorageService();
-    console.log(`Getting object file for path: ${audit.documentPath}`);
-    const objectFile = await objectStorageService.getObjectEntityFile(audit.documentPath);
-    
-    console.log(`Object file obtained, starting download...`);
-    
-    // Download the file content
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const stream = objectFile.createReadStream();
-      
-      stream.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
-      
-      stream.on('end', () => {
-        console.log(`File downloaded successfully, size: ${Buffer.concat(chunks).length} bytes`);
-        resolve(Buffer.concat(chunks));
-      });
-      
-      stream.on('error', (error) => {
-        console.log(`Error downloading file:`, error);
-        reject(error);
-      });
-    });
-    
-    // Extract text from PDF
-    const pdfText = await extractTextFromPDF(buffer);
-    
-    // Analyze with OpenAI
-    const analysis = await analyzeCondominiumAccounts(pdfText);
-    
-    // Save report
-    await storage.createAuditReport({
-      auditId,
-      totalBalance: analysis.totalBalance.toString(),
-      totalExpenses: analysis.totalExpenses.toString(),
-      biggestExpense: analysis.biggestExpense.toString(),
-      biggestExpenseDescription: analysis.biggestExpenseDescription,
-      expenseCategories: analysis.expenseCategories,
-      inconsistencies: analysis.inconsistencies,
-      aiAnalysis: analysis.summary,
-    });
-    
-    // Update audit status
-    await storage.updateAuditStatus(auditId, "completed");
-    
-    console.log(`Audit ${auditId} processed successfully`);
-  } catch (error) {
-    console.error(`Error processing audit ${auditId}:`, error);
-    await storage.updateAuditStatus(auditId, "error");
-  }
 }

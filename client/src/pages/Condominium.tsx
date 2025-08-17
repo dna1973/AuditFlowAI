@@ -80,8 +80,8 @@ export default function Condominium() {
   const uploadAuditMutation = useMutation({
     mutationFn: async ({ file, month, year }: { file: File; month: string; year: string }) => {
       // Get upload URL
-      const uploadUrlResponse = await apiRequest('POST', '/api/objects/upload');
-      const { uploadURL } = uploadUrlResponse as { uploadURL: string };
+      const uploadUrlResponse: any = await apiRequest('POST', '/api/objects/upload');
+      const uploadURL = uploadUrlResponse.uploadURL;
       
       // Upload file
       const formData = new FormData();
