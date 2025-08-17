@@ -1,0 +1,51 @@
+Crie uma aplicação web completa em português do Brasil.
+
+# Descrição do Projeto
+Uma aplicação web SaaS (Software as a Service) chamada "AuditFlow", especializada na auditoria automatizada de prestações de contas de condomínios. A plataforma deve permitir o upload de documentos PDF, que serão analisados por uma IA, e gerar relatórios de auditoria detalhados, apontando inconsistências e promovendo transparência.
+
+# Público-Alvo
+A interface deve atender a dois perfis de usuário:
+1.  **Administradores de Condomínios:** Que gerenciam múltiplos condomínios e precisam de um dashboard eficiente.
+2.  **Condôminos Auditores / Membros do Conselho:** Que focam em um único condomínio e precisam de clareza e simplicidade.
+
+# Estilo Visual
+Adote um design que transmita confiança, tecnologia e clareza.
+- **Paleta de Cores:** Use um tema dual (Dark/Light Mode). O modo escuro será o padrão. Cor principal: Grafite (#1A202C). Cor de destaque para botões e elementos interativos: um verde vibrante (#48BB78). Para o modo claro, use branco e cinzas suaves.
+- **Tipografia:** Fonte sans-serif moderna e de alta legibilidade, como "Inter".
+- **Layout:** Limpo, organizado, baseado em dashboards com cards bem definidos e muito espaço em branco para não sobrecarregar o usuário.
+- **Efeitos Visuais:** Aplique o efeito de Glassmorphism na barra de navegação lateral. Use micro-animações sutis em hovers de botões, carregamento de dados e transições de página para uma experiência premium e fluida.
+
+# Funcionalidades Principais (Telas)
+Crie as seguintes telas conectadas entre si:
+
+1.  **Página de Autenticação:** Uma tela de login e registro com design minimalista, fundo escuro e o logo "AuditFlow" em destaque.
+2.  **Dashboard Principal:** A tela inicial após o login. Deve conter:
+    - Um cabeçalho com o nome do usuário e um seletor de tema (dark/light).
+    - Um card de estatísticas rápidas no topo (ex: "Relatórios Concluídos", "Análises Pendentes").
+    - O Call to Action principal: um botão grande e verde com o texto "Fazer Novo Upload de Documento".
+    - Uma seção "Meus Condomínios" que exibe uma lista de cards. Cada card representa um condomínio e mostra seu nome e CNPJ.
+3.  **Página do Condomínio:** Ao clicar em um card de condomínio, navega-se para esta página. Ela deve exibir:
+    - O nome do condomínio em destaque no topo.
+    - Uma tabela moderna listando todas as prestações de contas já enviadas para aquele condomínio. As colunas da tabela devem ser: "Mês/Ano de Referência", "Data de Upload", e "Status da Análise".
+    - O status deve ser uma "tag" colorida: 'Pendente' (amarelo), 'Processando' (azul), 'Concluído' (verde), 'Erro' (vermelho).
+    - Quando o status for "Concluído", a linha da tabela deve ser clicável para levar à página do relatório.
+4.  **Modal de Upload de Documento:** Acionado pelo botão "Fazer Novo Upload". Deve ser um modal com efeito de Glassmorphism contendo:
+    - Uma área de "arraste e solte" (drag-and-drop) para o arquivo PDF.
+    - Campos para selecionar o "Mês" e "Ano" de referência da prestação de contas.
+    - Um botão de "Iniciar Análise".
+5.  **Página do Relatório de Auditoria:** A tela para visualizar o resultado final. O design deve ser extremamente claro e profissional. Divida em três seções principais:
+    - **Seção 1: Resumo Geral:** No topo, cards com as informações chave extraídas pela IA (ex: "Balanço Total", "Total de Despesas", "Maior Gasto do Mês").
+    - **Seção 2: Análise Detalhada:** Use gráficos (componente Recharts) para visualizar a distribuição de despesas por categoria.
+    - **Seção 3: Inconsistências Encontradas (Ressalvas):** A parte mais importante. Exiba uma lista de "cards de alerta". Cada card representa uma inconsistência apontada pela IA e deve mostrar: a descrição da inconsistência, o tipo ('financeira', 'conformidade') e uma tag colorida para o nível de criticidade ('baixa', 'media', 'alta').
+
+# Estilização Avançada e Stack Técnica
+Utilize a seguinte stack para garantir um resultado de alta qualidade:
+- **Framework CSS:** Tailwind CSS.
+- **Componentes UI:** shadcn/ui.
+- **Ícones:** Lucide React.
+- **Temas (Dark/Light):** next-themes.
+- **Gráficos:** Recharts.
+- **Formulários:** React Hook Form com validação Zod.
+
+# Instruções de Design Contemporâneo
+Priorize uma experiência de usuário premium e envolvente. A interface deve parecer viva e responsiva. Use transições suaves entre páginas e estados de carregamento (loading states) elegantes. O foco é em uma apresentação de dados que seja ao mesmo tempo bonita e funcional. Inspire-se em dashboards modernos como o da Vercel para a organização dos elementos.
