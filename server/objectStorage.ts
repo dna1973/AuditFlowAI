@@ -95,7 +95,7 @@ export class ObjectStorageService {
   }
 
   // Downloads an object to the response.
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
+  async downloadObjectToResponse(file: File, res: Response, cacheTtlSec: number = 3600) {
     try {
       // Get file metadata
       const [metadata] = await file.getMetadata();
@@ -236,6 +236,42 @@ export class ObjectStorageService {
       objectFile,
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
+  }
+
+  // Download object from storage
+  async downloadObject(objectPath: string, userId: string): Promise<NodeJS.ReadableStream> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    
+    // Check permissions
+    const hasAccess = await this.canAccessObjectEntity({
+      userId,
+      objectFile,
+      requestedPermission: ObjectPermission.READ,
+    });
+    
+    if (!hasAccess) {
+      throw new Error("Access denied");
+    }
+    
+    return objectFile.createReadStream();
+  }
+
+  // Delete object from storage
+  async deleteObject(objectPath: string, userId: string): Promise<void> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    
+    // Check permissions
+    const hasAccess = await this.canAccessObjectEntity({
+      userId,
+      objectFile,
+      requestedPermission: ObjectPermission.WRITE,
+    });
+    
+    if (!hasAccess) {
+      throw new Error("Access denied");
+    }
+    
+    await objectFile.delete();
   }
 }
 

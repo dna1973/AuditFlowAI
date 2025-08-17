@@ -58,12 +58,26 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   });
 }
 
+function truncateText(text: string, maxTokens: number = 25000): string {
+  // Estimate tokens (rough approximation: 1 token = 4 characters)
+  const maxChars = maxTokens * 4;
+  if (text.length <= maxChars) {
+    return text;
+  }
+  
+  console.log(`Truncating text from ${text.length} to ${maxChars} characters`);
+  return text.substring(0, maxChars) + "\n\n[DOCUMENTO TRUNCADO DEVIDO AO TAMANHO]";
+}
+
 export async function analyzeCondominiumAccounts(pdfText: string): Promise<AuditAnalysis> {
+  // Truncate text to fit within token limits
+  const truncatedText = truncateText(pdfText);
+  
   const prompt = `
     Você é um auditor especializado em prestações de contas de condomínios. Analise o seguinte documento de prestação de contas e forneça uma análise detalhada.
 
     Documento para análise:
-    ${pdfText}
+    ${truncatedText}
 
     Por favor, forneça uma análise completa no seguinte formato JSON:
     {

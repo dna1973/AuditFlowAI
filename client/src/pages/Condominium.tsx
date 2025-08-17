@@ -105,10 +105,10 @@ export default function Condominium() {
     <div className="p-8">
       <div className="mb-6">
         <Link href="/">
-          <a className="flex items-center text-verde-accent hover:text-green-600 transition-colors duration-200 mb-4" data-testid="link-back-dashboard">
+          <Button variant="ghost" className="flex items-center text-verde-accent hover:text-green-600 transition-colors duration-200 mb-4 p-0" data-testid="link-back-dashboard">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar ao Dashboard
-          </a>
+          </Button>
         </Link>
         <Header 
           title={condominium.name}
