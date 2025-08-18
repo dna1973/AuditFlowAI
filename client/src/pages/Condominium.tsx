@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Calendar, CheckCircle, Download, Trash2, Eye, AlertTriangle, Plus, Upload } from "lucide-react";
+import { ArrowLeft, FileText, Calendar, CheckCircle, Download, Trash2, Eye, AlertTriangle, Plus, Upload, Bot } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +43,29 @@ export default function Condominium() {
   const { data: audits = [] } = useQuery<Audit[]>({
     queryKey: ["/api/condominiums", condominiumId, "audits"],
     enabled: !!condominiumId,
+  });
+
+  // Process audit mutation
+  const processAuditMutation = useMutation({
+    mutationFn: async (auditId: string) => {
+      return await apiRequest('POST', `/api/audits/${auditId}/process`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/condominiums", condominiumId, "audits"] });
+      toast({ 
+        title: "Sucesso", 
+        description: "Processamento iniciado! A análise com IA está sendo executada.",
+        duration: 3000
+      });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Erro", 
+        description: error.message || "Falha ao iniciar processamento",
+        variant: "destructive",
+        duration: 3000
+      });
+    },
   });
 
   // Delete audit mutation
@@ -144,8 +167,8 @@ export default function Condominium() {
       
       toast({
         title: "Sucesso",
-        description: "Prestação de contas enviada com sucesso! A análise será iniciada em breve.",
-        duration: 3000
+        description: "Arquivo enviado com sucesso! Use o botão 'Processar com IA' para analisar o conteúdo.",
+        duration: 4000
       });
       
       setIsUploadDialogOpen(false);
@@ -490,6 +513,21 @@ export default function Condominium() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
+                          {/* Process with AI - only show if not completed and has document */}
+                          {audit.status === 'pending' && audit.documentPath && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => processAuditMutation.mutate(audit.id)}
+                              disabled={processAuditMutation.isPending}
+                              className="h-8 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
+                              data-testid={`button-process-ai-${audit.id}`}
+                            >
+                              <Bot className="w-4 h-4 mr-1" />
+                              Processar com IA
+                            </Button>
+                          )}
+                          
                           {/* Download PDF */}
                           <Button
                             variant="outline"

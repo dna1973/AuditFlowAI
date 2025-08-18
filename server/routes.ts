@@ -383,15 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const audit = await storage.createAudit(auditData);
       console.log("Audit created:", audit.id);
       
-      // Start processing immediately
-      console.log("Starting document processing for audit:", audit.id);
-      processAuditDocument(audit.id, documentPath).catch(error => {
-        console.error("Background processing failed:", error);
-        storage.updateAuditStatus(audit.id, "error").catch(console.error);
-      });
-      
-      // Update status to processing
-      await storage.updateAuditStatus(audit.id, "processing");
+      // Don't start processing automatically - wait for user request
       
       res.status(201).json(audit);
     } catch (error) {
@@ -417,19 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const audit = await storage.createAudit(auditData);
       console.log("Audit created:", audit.id);
       
-      // Start processing immediately
-      if (audit.documentPath) {
-        console.log("Starting document processing for audit:", audit.id);
-        // Process document asynchronously
-        processAuditDocument(audit.id, audit.documentPath).catch(error => {
-          console.error("Background processing failed:", error);
-          // Update audit status to error
-          storage.updateAuditStatus(audit.id, "error").catch(console.error);
-        });
-        
-        // Update status to processing
-        await storage.updateAuditStatus(audit.id, "processing");
-      }
+      // Don't start processing automatically - wait for user request
       
       res.status(201).json(audit);
     } catch (error) {
@@ -490,6 +470,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing audit:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Process audit document manually
+  app.post("/api/audits/:id/process", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const auditId = req.params.id;
+      
+      // Get audit and verify ownership
+      const audit = await storage.getAuditById(auditId);
+      if (!audit) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      const condominium = await storage.getCondominiumById(audit.condominiumId);
+      if (!condominium || condominium.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!audit.documentPath) {
+        return res.status(400).json({ error: "No document to process" });
+      }
+      
+      if (audit.status === "processing") {
+        return res.status(400).json({ error: "Document is already being processed" });
+      }
+      
+      // Update status to processing
+      await storage.updateAuditStatus(auditId, "processing");
+      
+      // Start async processing
+      processAuditDocument(auditId, audit.documentPath).catch(error => {
+        console.error("Error processing audit document:", error);
+        storage.updateAuditStatus(auditId, "error");
+      });
+      
+      res.json({ 
+        message: "Document processing started",
+        status: "processing"
+      });
+    } catch (error) {
+      console.error("Error starting processing:", error);
+      res.status(500).json({ error: "Failed to start processing" });
     }
   });
 
