@@ -70,44 +70,94 @@ export class PDFReportGenerator {
   }
 
   private addSimpleTable(headers: string[], data: string[][], yPos: number): number {
-    const cellHeight = 8;
-    const cellWidth = (this.pageWidth - 2 * this.margin) / headers.length;
+    const minCellHeight = 12;
+    const cellPadding = 2;
+    const tableWidth = this.pageWidth - 2 * this.margin;
+    
+    // Calculate column widths based on content
+    const columnWidths = headers.map((header, index) => {
+      if (index === 0) return tableWidth * 0.12; // Prioridade - smaller
+      if (index === 1) return tableWidth * 0.35; // Achado/Ponto de Atenção - larger
+      if (index === 2) return tableWidth * 0.35; // Recomendação - larger  
+      if (index === 3) return tableWidth * 0.12; // Responsável - smaller
+      if (index === 4) return tableWidth * 0.06; // Prazo - smallest
+      return tableWidth / headers.length; // fallback
+    });
     
     // Draw headers
     this.doc.setFillColor(34, 197, 94); // Green background
-    this.doc.rect(this.margin, yPos, this.pageWidth - 2 * this.margin, cellHeight, 'F');
+    this.doc.rect(this.margin, yPos, tableWidth, minCellHeight, 'F');
     
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(255, 255, 255); // White text
     
+    let currentX = this.margin;
     headers.forEach((header, index) => {
-      this.doc.text(header, this.margin + (index * cellWidth) + 2, yPos + 6);
+      // Break header text if needed
+      const headerText = this.doc.splitTextToSize(header, columnWidths[index] - cellPadding * 2);
+      this.doc.text(headerText[0], currentX + cellPadding, yPos + 8);
+      currentX += columnWidths[index];
     });
     
     // Draw data rows
     this.doc.setFont('helvetica', 'normal');
     this.doc.setTextColor(0, 0, 0); // Black text
+    this.doc.setFontSize(8);
     
-    let currentY = yPos + cellHeight;
+    let currentY = yPos + minCellHeight;
+    
     data.forEach((row, rowIndex) => {
-      if (rowIndex % 2 === 1) {
-        this.doc.setFillColor(248, 249, 250); // Light gray for alternate rows
-        this.doc.rect(this.margin, currentY, this.pageWidth - 2 * this.margin, cellHeight, 'F');
-      }
+      // Calculate row height based on content
+      let maxLines = 1;
+      const cellTexts: string[][] = [];
       
       row.forEach((cell, cellIndex) => {
-        this.doc.text(cell, this.margin + (cellIndex * cellWidth) + 2, currentY + 6);
+        const splitText = this.doc.splitTextToSize(cell || '', columnWidths[cellIndex] - cellPadding * 2);
+        cellTexts.push(splitText);
+        maxLines = Math.max(maxLines, splitText.length);
       });
       
-      currentY += cellHeight;
+      const rowHeight = Math.max(minCellHeight, maxLines * 5 + cellPadding * 2);
+      
+      // Draw alternating row background
+      if (rowIndex % 2 === 1) {
+        this.doc.setFillColor(248, 249, 250); // Light gray for alternate rows
+        this.doc.rect(this.margin, currentY, tableWidth, rowHeight, 'F');
+      }
+      
+      // Draw cell content
+      currentX = this.margin;
+      row.forEach((cell, cellIndex) => {
+        const splitText = cellTexts[cellIndex];
+        splitText.forEach((line, lineIndex) => {
+          this.doc.text(line, currentX + cellPadding, currentY + 6 + (lineIndex * 5));
+        });
+        currentX += columnWidths[cellIndex];
+      });
+      
+      // Draw cell borders
+      this.doc.setDrawColor(200, 200, 200);
+      currentX = this.margin;
+      row.forEach((_, cellIndex) => {
+        if (cellIndex > 0) {
+          this.doc.line(currentX, currentY, currentX, currentY + rowHeight);
+        }
+        currentX += columnWidths[cellIndex];
+      });
+      
+      currentY += rowHeight;
     });
     
-    // Draw table borders
+    // Draw table outer borders
     this.doc.setDrawColor(0, 0, 0);
-    this.doc.rect(this.margin, yPos, this.pageWidth - 2 * this.margin, cellHeight * (data.length + 1));
+    this.doc.setLineWidth(0.5);
+    this.doc.rect(this.margin, yPos, tableWidth, currentY - yPos);
     
-    return currentY + 10;
+    // Draw horizontal lines
+    this.doc.line(this.margin, yPos + minCellHeight, this.margin + tableWidth, yPos + minCellHeight);
+    
+    return currentY + 15;
   }
 
   public generateReport(data: ReportData): jsPDF {
