@@ -105,18 +105,12 @@ export default function DefaultReport() {
       const paidRate = 0.80; // 80% paid rate for demo
       
       return allLots.map((lotId, index) => {
-        let status: 'paid' | 'defaulted' | 'unknown';
         // Use a deterministic approach based on lot ID to ensure consistency
         const seed = lotId.charCodeAt(2) + lotId.charCodeAt(3) + lotId.charCodeAt(4);
         const pseudoRandom = (seed % 100) / 100;
         
-        if (pseudoRandom < defaultRate) {
-          status = 'defaulted';
-        } else if (pseudoRandom < defaultRate + paidRate) {
-          status = 'paid';
-        } else {
-          status = 'unknown';
-        }
+        // Simple binary logic: pago ou inadimplente (15% inadimplência)
+        const status: 'paid' | 'defaulted' = pseudoRandom < defaultRate ? 'defaulted' : 'paid';
         
         return {
           lotId,
@@ -133,9 +127,7 @@ export default function DefaultReport() {
 
     return allLots.map(lotId => ({
       lotId,
-      status: paidLots.includes(lotId) ? 'paid' as const :
-             defaultedLots.includes(lotId) ? 'defaulted' as const : 
-             'unknown' as const,
+      status: paidLots.includes(lotId) ? 'paid' as const : 'defaulted' as const,
       amount: paidLots.includes(lotId) ? (200 + ((lotId.charCodeAt(2) + lotId.charCodeAt(3)) % 300)) : undefined,
       month: auditReportsData && Array.isArray(auditReportsData) && auditReportsData.length > 0 && auditReportsData[0].audit ? 
         new Date(0, auditReportsData[0].audit.month - 1).toLocaleDateString('pt-BR', { month: 'long' }) : 
@@ -162,9 +154,7 @@ export default function DefaultReport() {
         defaultRate: period.report.defaultRate ? parseFloat(period.report.defaultRate.toString()) : 0,
         lots: MORADA_NOBRE_LOTS.map(lotId => ({
           lotId,
-          status: paidLots.includes(lotId) ? 'paid' as const :
-                 defaultedLots.includes(lotId) ? 'defaulted' as const : 
-                 'unknown' as const,
+          status: paidLots.includes(lotId) ? 'paid' as const : 'defaulted' as const,
           amount: paidLots.includes(lotId) ? (200 + ((lotId.charCodeAt(2) + lotId.charCodeAt(3)) % 300)) : undefined,
           month: period.label,
           year: period.audit.year
@@ -198,7 +188,6 @@ export default function DefaultReport() {
     total: lotData.length,
     paid: lotData.filter(l => l.status === 'paid').length,
     defaulted: lotData.filter(l => l.status === 'defaulted').length,
-    unknown: lotData.filter(l => l.status === 'unknown').length,
   };
 
   const stats = {
@@ -225,8 +214,9 @@ export default function DefaultReport() {
         );
       default:
         return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300">
-            Não informado
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Inadimplente
           </Badge>
         );
     }
@@ -284,7 +274,7 @@ export default function DefaultReport() {
       {selectedCondominium && (
         <>
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
@@ -321,15 +311,7 @@ export default function DefaultReport() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Não Informados</CardTitle>
-                <AlertCircle className="h-4 w-4 text-gray-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-600" data-testid="text-unknown-lots">{stats.unknown}</div>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Period and View Mode Selection */}
@@ -409,7 +391,6 @@ export default function DefaultReport() {
                     <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="paid">Pagos</SelectItem>
                     <SelectItem value="defaulted">Inadimplentes</SelectItem>
-                    <SelectItem value="unknown">Não informados</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -560,10 +541,6 @@ export default function DefaultReport() {
                       <div className="w-4 h-4 rounded border border-red-300 bg-red-100"></div>
                       <span className="text-sm">Inadimplente</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded border border-gray-300 bg-gray-100"></div>
-                      <span className="text-sm">Não informado</span>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -574,9 +551,9 @@ export default function DefaultReport() {
                     key={lot.lotId} 
                     className={cn(
                       "transition-all hover:shadow-md cursor-pointer",
+                      getQuadraColor(lot.lotId.substring(0, 2)),
                       lot.status === 'paid' && "border-green-300 bg-green-100 dark:border-green-800 dark:bg-green-900/20",
-                      lot.status === 'defaulted' && "border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-900/20", 
-                      lot.status === 'unknown' && getQuadraColor(lot.lotId.substring(0, 2))
+                      lot.status === 'defaulted' && "border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-900/20"
                     )}
                     data-testid={`card-lot-${lot.lotId}`}
                   >
