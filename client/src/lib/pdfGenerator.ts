@@ -1,13 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import type { AuditReport } from '@shared/schema';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 interface ReportData {
   condominium: {
@@ -75,6 +67,47 @@ export class PDFReportGenerator {
       return 30; // Reset y position for new page
     }
     return currentY;
+  }
+
+  private addSimpleTable(headers: string[], data: string[][], yPos: number): number {
+    const cellHeight = 8;
+    const cellWidth = (this.pageWidth - 2 * this.margin) / headers.length;
+    
+    // Draw headers
+    this.doc.setFillColor(34, 197, 94); // Green background
+    this.doc.rect(this.margin, yPos, this.pageWidth - 2 * this.margin, cellHeight, 'F');
+    
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(255, 255, 255); // White text
+    
+    headers.forEach((header, index) => {
+      this.doc.text(header, this.margin + (index * cellWidth) + 2, yPos + 6);
+    });
+    
+    // Draw data rows
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(0, 0, 0); // Black text
+    
+    let currentY = yPos + cellHeight;
+    data.forEach((row, rowIndex) => {
+      if (rowIndex % 2 === 1) {
+        this.doc.setFillColor(248, 249, 250); // Light gray for alternate rows
+        this.doc.rect(this.margin, currentY, this.pageWidth - 2 * this.margin, cellHeight, 'F');
+      }
+      
+      row.forEach((cell, cellIndex) => {
+        this.doc.text(cell, this.margin + (cellIndex * cellWidth) + 2, currentY + 6);
+      });
+      
+      currentY += cellHeight;
+    });
+    
+    // Draw table borders
+    this.doc.setDrawColor(0, 0, 0);
+    this.doc.rect(this.margin, yPos, this.pageWidth - 2 * this.margin, cellHeight * (data.length + 1));
+    
+    return currentY + 10;
   }
 
   public generateReport(data: ReportData): jsPDF {
@@ -169,16 +202,7 @@ export class PDFReportGenerator {
         this.formatCurrency(expense.amount || 0)
       ]);
       
-      this.doc.autoTable({
-        head: [['Descrição', 'Fornecedor', 'Valor']],
-        body: expenseData,
-        startY: yPos,
-        margin: { left: this.margin, right: this.margin },
-        theme: 'striped',
-        headStyles: { fillColor: [34, 197, 94] }, // Green color
-      });
-      
-      yPos = (this.doc as any).lastAutoTable.finalY + 10;
+      yPos = this.addSimpleTable(['Descrição', 'Fornecedor', 'Valor'], expenseData, yPos);
     }
     
     yPos = this.addText('Verificação de Documentação: Todas as despesas acima de R$ 100,00 foram verificadas e possuem documentação suporte adequada.', yPos);
@@ -243,23 +267,11 @@ export class PDFReportGenerator {
         action.deadline || 'N/A'
       ]);
       
-      this.doc.autoTable({
-        head: [['Prioridade', 'Achado/Ponto de Atenção', 'Recomendação', 'Responsável', 'Prazo']],
-        body: actionData,
-        startY: yPos,
-        margin: { left: this.margin, right: this.margin },
-        theme: 'striped',
-        headStyles: { fillColor: [34, 197, 94] },
-        columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 }
-        }
-      });
-      
-      yPos = (this.doc as any).lastAutoTable.finalY + 10;
+      yPos = this.addSimpleTable(
+        ['Prioridade', 'Achado/Ponto de Atenção', 'Recomendação', 'Responsável', 'Prazo'], 
+        actionData, 
+        yPos
+      );
     }
 
     // Page 5: Detailed Lists (Inadimplentes/Pagos)
@@ -272,20 +284,21 @@ export class PDFReportGenerator {
     yPos = this.addSection('5.1. Relatório de Inadimplentes:', yPos);
     const defaultUnitsList = (report.defaultUnitsList as string[]) || [];
     if (defaultUnitsList.length > 0) {
-      // Create table with defaulting units
-      const defaultData = defaultUnitsList.map(unit => [unit]);
-      const columns = Math.ceil(defaultUnitsList.length / 20); // Max 20 per column
+      // Create table with defaulting units - organize in multiple columns for better display
+      const defaultData: string[][] = [];
+      const unitsPerRow = 4; // Show 4 units per row for better layout
       
-      this.doc.autoTable({
-        head: [['Lotes Inadimplentes']],
-        body: defaultData.map(unit => unit),
-        startY: yPos,
-        margin: { left: this.margin, right: this.margin },
-        theme: 'striped',
-        headStyles: { fillColor: [239, 68, 68] }, // Red color
-      });
+      for (let i = 0; i < defaultUnitsList.length; i += unitsPerRow) {
+        const row = defaultUnitsList.slice(i, i + unitsPerRow);
+        // Pad with empty strings if needed
+        while (row.length < unitsPerRow) {
+          row.push('');
+        }
+        defaultData.push(row);
+      }
       
-      yPos = (this.doc as any).lastAutoTable.finalY + 20;
+      this.doc.setFillColor(239, 68, 68); // Red background for header
+      yPos = this.addSimpleTable(['Lote', 'Lote', 'Lote', 'Lote'], defaultData, yPos);
     }
     
     // Lista de Pagos (opcional, por privacidade)
