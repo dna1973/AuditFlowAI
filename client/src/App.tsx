@@ -10,6 +10,7 @@ import Landing from "@/pages/Landing";
 import Condominiums from "@/pages/Condominiums";
 import Condominium from "@/pages/Condominium";
 import AuditReport from "@/pages/AuditReport";
+import DefaultReport from "@/pages/DefaultReport";
 import Settings from "@/pages/Settings";
 import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/not-found";
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/condominiums" component={Condominiums} />
           <Route path="/condominium/:id" component={Condominium} />
           <Route path="/audit-report/:id" component={AuditReport} />
+          <Route path="/default-report" component={DefaultReport} />
           <Route path="/settings" component={Settings} />
           <Route path="/admin" component={AdminPanel} />
           <Route component={NotFound} />

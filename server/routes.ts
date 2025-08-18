@@ -595,6 +595,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get audit reports for a specific condominium (for default reports)
+  app.get("/api/condominiums/:id/audit-reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const condominiumId = req.params.id;
+      
+      // Verify condominium ownership or admin access
+      const condominium = await storage.getCondominiumById(condominiumId);
+      if (!condominium) {
+        return res.status(404).json({ error: "Condominium not found" });
+      }
+      
+      const currentUser = await storage.getUser(userId);
+      const isOwner = condominium.ownerId === userId;
+      const isAdmin = currentUser?.role === 'admin';
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Get all audits for this condominium
+      const audits = await storage.getAuditsByCondominiumId(condominiumId);
+      
+      // Get audit reports for each audit
+      const auditReports = await Promise.all(
+        audits.map(async (audit) => {
+          const report = await storage.getAuditReportByAuditId(audit.id);
+          return report ? { audit, report } : null;
+        })
+      );
+      
+      // Filter out null values and return
+      const validReports = auditReports.filter(item => item !== null);
+      res.json(validReports);
+    } catch (error) {
+      console.error("Error fetching condominium audit reports:", error);
+      res.status(500).json({ error: "Failed to fetch audit reports" });
+    }
+  });
+
   // Download audit PDF
   app.get("/api/audits/:id/download", isAuthenticated, async (req: any, res) => {
     try {

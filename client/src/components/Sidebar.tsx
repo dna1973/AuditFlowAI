@@ -1,4 +1,4 @@
-import { Building2, Settings, ShieldCheck, Shield } from "lucide-react";
+import { Building2, Settings, ShieldCheck, Shield, TrendingDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,11 @@ const navigationItems = [
     name: "Condomínios",
     href: "/condominiums",
     icon: Building2,
+  },
+  {
+    name: "Inadimplência",
+    href: "/default-report",
+    icon: TrendingDown,
   },
   {
     name: "Configurações",
