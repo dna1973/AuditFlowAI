@@ -422,57 +422,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process uploaded document
-  app.post("/api/audits/:id/process", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const auditId = req.params.id;
-      const { documentUrl } = req.body;
-      
-      if (!documentUrl) {
-        return res.status(400).json({ error: "documentUrl is required" });
-      }
-      
-      // Get audit and verify ownership
-      const audit = await storage.getAuditById(auditId);
-      if (!audit) {
-        return res.status(404).json({ error: "Audit not found" });
-      }
-      
-      const condominium = await storage.getCondominiumById(audit.condominiumId);
-      if (!condominium || condominium.ownerId !== userId) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-      
-      // Set ACL for uploaded document
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        documentUrl,
-        {
-          owner: userId,
-          visibility: "private",
-        }
-      );
-      
-      // Update audit with document path and processing status
-      await storage.updateAuditStatus(auditId, "processing", objectPath);
-      
-      // Start async processing
-      processAuditDocument(auditId, documentUrl).catch(error => {
-        console.error("Error processing audit document:", error);
-        storage.updateAuditStatus(auditId, "error");
-      });
-      
-      res.json({ 
-        message: "Document processing started",
-        objectPath 
-      });
-    } catch (error) {
-      console.error("Error processing audit:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // Process audit document manually
   app.post("/api/audits/:id/process", isAuthenticated, async (req: any, res) => {
     try {
@@ -491,6 +440,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!audit.documentPath) {
+        console.log("No document path found for audit:", auditId, "Audit data:", {
+          id: audit.id,
+          status: audit.status,
+          fileName: audit.fileName,
+          documentPath: audit.documentPath
+        });
         return res.status(400).json({ error: "No document to process" });
       }
       

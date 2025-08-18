@@ -112,7 +112,7 @@ export default function Condominium() {
         // Upload file directly to our backend with progress
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('condominiumId', condominiumId);
+        formData.append('condominiumId', condominiumId || '');
         formData.append('month', month);
         formData.append('year', year);
         
