@@ -170,10 +170,21 @@ export default function Condominium() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
+      // Check if file is PDF or Excel
+      const allowedTypes = [
+        'application/pdf',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      const isValidType = allowedTypes.includes(file.type) || 
+                         file.name.toLowerCase().endsWith('.xls') || 
+                         file.name.toLowerCase().endsWith('.xlsx');
+      
+      if (!isValidType) {
         toast({
           title: "Erro",
-          description: "Por favor, selecione apenas arquivos PDF",
+          description: "Selecione arquivos PDF para prestação de contas ou Excel (.xls, .xlsx) para dados de pagamento",
           variant: "destructive",
           duration: 3000
         });
@@ -285,7 +296,7 @@ export default function Condominium() {
               <DialogHeader>
                 <DialogTitle>Upload de Prestação de Contas</DialogTitle>
                 <DialogDescription>
-                  Envie um arquivo PDF com a prestação de contas para análise automatizada.
+                  Envie um PDF (prestação de contas) ou Excel (dados de pagamento) para análise automatizada com IA.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -319,13 +330,13 @@ export default function Condominium() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="file" className="text-right">
-                    Arquivo PDF
+                    Arquivo
                   </Label>
                   <div className="col-span-3">
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf"
+                      accept=".pdf,.xls,.xlsx"
                       onChange={handleFileSelect}
                       className="hidden"
                       data-testid="input-file"
