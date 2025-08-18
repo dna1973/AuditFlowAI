@@ -156,22 +156,12 @@ export default function AuditReport() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {report.paidUnitsList && Array.isArray(report.paidUnitsList) && report.paidUnitsList.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {report.paidUnitsList.slice(0, 20).map((unit: string, index: number) => (
-                    <Badge key={index} className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                      {unit}
-                    </Badge>
-                  ))}
-                  {report.paidUnitsList.length > 20 && (
-                    <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                      +{report.paidUnitsList.length - 20} mais
-                    </Badge>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400">Dados não disponíveis no documento analisado</p>
-              )}
+              <p className="text-gray-600 dark:text-gray-400">
+                {report.paidUnits && report.paidUnits > 0 ? 
+                  `${report.paidUnits} lotes adimplentes identificados` : 
+                  'Dados não disponíveis no documento analisado'
+                }
+              </p>
             </CardContent>
           </Card>
 
@@ -183,27 +173,12 @@ export default function AuditReport() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {report.defaultUnitsList && Array.isArray(report.defaultUnitsList) && report.defaultUnitsList.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {report.defaultUnitsList.slice(0, 20).map((unit: string, index: number) => (
-                    <Badge key={index} className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                      {unit}
-                    </Badge>
-                  ))}
-                  {report.defaultUnitsList.length > 20 && (
-                    <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                      +{report.defaultUnitsList.length - 20} mais
-                    </Badge>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400">
-                  {report.defaultUnits && report.defaultUnits > 0 ? 
-                    'Calcular pela diferença dos lotes que pagaram' : 
-                    'Todos os lotes estão adimplentes'
-                  }
-                </p>
-              )}
+              <p className="text-gray-600 dark:text-gray-400">
+                {report.defaultUnits && report.defaultUnits > 0 ? 
+                  `${report.defaultUnits} lotes inadimplentes identificados` : 
+                  'Todos os lotes estão adimplentes'
+                }
+              </p>
             </CardContent>
           </Card>
         </div>
