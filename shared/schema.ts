@@ -88,6 +88,21 @@ export const auditReports = pgTable("audit_reports", {
   defaultRate: decimal("default_rate", { precision: 5, scale: 2 }), // Percentual de inadimplência
   paidUnitsList: jsonb("paid_units_list"), // Lista dos lotes que pagaram
   defaultUnitsList: jsonb("default_units_list"), // Lista dos lotes inadimplentes
+  
+  // Additional fields for PDF report
+  checkingAccountBalance: decimal("checking_account_balance", { precision: 12, scale: 2 }), // Saldo em conta corrente
+  reserveFundBalance: decimal("reserve_fund_balance", { precision: 12, scale: 2 }), // Saldo no fundo de reserva
+  totalRevenues: decimal("total_revenues", { precision: 12, scale: 2 }), // Total de receitas do mês
+  monthlyResult: decimal("monthly_result", { precision: 12, scale: 2 }), // Resultado do mês
+  totalAccumulatedDefault: decimal("total_accumulated_default", { precision: 12, scale: 2 }), // Total acumulado de inadimplência
+  complianceAlerts: jsonb("compliance_alerts"), // Alertas de conformidade
+  bankReconciliation: jsonb("bank_reconciliation"), // Conciliação bancária
+  extraRevenues: jsonb("extra_revenues"), // Receitas extraordinárias
+  mainExpenses: jsonb("main_expenses"), // Principais despesas do mês
+  defaultManagementActions: jsonb("default_management_actions"), // Ações de gestão de inadimplência
+  complianceVerification: jsonb("compliance_verification"), // Verificação de conformidade
+  actionPlan: jsonb("action_plan"), // Plano de ação e recomendações
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 

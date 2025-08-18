@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, AlertTriangle, CheckCircle, XCircle, TrendingUp, DollarSign, Users, UserCheck } from "lucide-react";
+import { ArrowLeft, FileText, AlertTriangle, CheckCircle, XCircle, TrendingUp, DollarSign, Users, UserCheck, Download } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link, useRoute } from "wouter";
+import { PDFReportGenerator } from "@/lib/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 import type { AuditReport } from "@shared/schema";
 
 const severityConfig = {
@@ -17,6 +19,7 @@ const severityConfig = {
 export default function AuditReport() {
   const [match, params] = useRoute("/audit-report/:id");
   const auditId = params?.id;
+  const { toast } = useToast();
 
   const { data: reportData, isLoading } = useQuery<{audit: any, report: AuditReport, condominium: any}>({
     queryKey: ["/api/audits", auditId, "report"],
@@ -24,6 +27,40 @@ export default function AuditReport() {
   });
 
   const report = reportData?.report;
+  const audit = reportData?.audit;
+  const condominium = reportData?.condominium;
+
+  const handleDownloadPDF = () => {
+    if (!report || !audit || !condominium) {
+      toast({
+        title: "Erro",
+        description: "Dados insuficientes para gerar o relatório PDF",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const pdfGenerator = new PDFReportGenerator();
+      pdfGenerator.downloadReport({
+        condominium,
+        audit,
+        report
+      });
+      
+      toast({
+        title: "Sucesso",
+        description: "Relatório PDF baixado com sucesso",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao gerar o relatório PDF",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -69,10 +106,20 @@ export default function AuditReport() {
             Voltar ao Dashboard
           </Button>
         </Link>
-        <Header 
-          title="Relatório de Auditoria"
-          subtitle="Análise detalhada da prestação de contas"
-        />
+        <div className="flex items-center justify-between">
+          <Header 
+            title="Relatório de Auditoria"
+            subtitle="Análise detalhada da prestação de contas"
+          />
+          <Button 
+            onClick={handleDownloadPDF}
+            className="bg-verde-accent hover:bg-green-600 text-white"
+            data-testid="button-download-pdf"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Baixar PDF Completo
+          </Button>
+        </div>
       </div>
 
       {/* Financial Summary */}

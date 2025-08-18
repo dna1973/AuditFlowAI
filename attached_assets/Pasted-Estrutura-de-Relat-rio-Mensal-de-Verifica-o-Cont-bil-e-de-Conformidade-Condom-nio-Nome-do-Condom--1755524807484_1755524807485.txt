@@ -1,0 +1,118 @@
+Estrutura de Relatório Mensal de Verificação Contábil e de Conformidade
+Condomínio: [Nome do Condomínio Residencial]
+Relatório Mensal de Acompanhamento
+Mês de Referência: [Ex: Julho de 2025]
+Data de Emissão: [Data]
+
+1. Painel Resumo do Mês (Sumário Executivo)
+Esta é a primeira página, um "dashboard" com os indicadores mais importantes que o síndico e os moradores precisam saber.
+
+Saúde Financeira:
+
+Saldo em Conta Corrente em [último dia do mês]: R$ XX.XXX,XX
+
+Saldo no Fundo de Reserva: R$ XX.XXX,XX
+
+Total de Receitas no Mês: R$ XX.XXX,XX
+
+Total de Despesas no Mês: R$ XX.XXX,XX
+
+Resultado do Mês (Superávit/Déficit): R$ X.XXX,XX
+
+Inadimplência:
+
+Índice de Inadimplência do Mês: X,X%
+
+Total Acumulado de Inadimplência: R$ XX.XXX,XX
+
+Unidades Inadimplentes: [Listar as unidades ou apenas a quantidade]
+
+Alertas Importantes de Conformidade (Compliance):
+
+[Ex: "Nenhum alerta crítico este mês."] ou [Ex: "Vencimento do certificado de dedetização em [data]. Ação necessária."]
+
+2. Análise Financeira e Contábil do Mês
+Aqui detalhamos os números apresentados no resumo.
+
+2.1. Conciliação Bancária:
+
+Conclusão: [Ex: "As movimentações financeiras registradas no controle interno do condomínio estão em total conformidade com os extratos bancários das contas correntes e de investimento."]
+
+Anexar a conciliação bancária detalhada.
+
+2.2. Receitas:
+
+Análise: Breve texto informando se as cotas condominiais foram emitidas corretamente e se os recebimentos conferem com o relatório da administradora/banco.
+
+Receitas Extraordinárias (se houver): [Ex: "Recebimento de R$ X.XXX,XX referente à locação do salão de festas."]
+
+2.3. Despesas:
+
+Análise Geral: Comentário sobre o comportamento das despesas no mês em relação ao orçamento previsto.
+
+Despesas por Categoria (Gráfico): Um gráfico de pizza ou de barras é ideal aqui, mostrando a divisão dos gastos (Pessoal, Concessionárias, Manutenção, Administrativas, etc.).
+
+Principais Despesas do Mês: Listar as 5 ou 10 maiores despesas, com fornecedor e valor.
+
+Verificação de Documentação: [Ex: "Todas as despesas acima de R$ 100,00 foram verificadas e possuem documentação suporte adequada (notas fiscais ou recibos válidos)."]
+
+2.4. Gestão da Inadimplência:
+
+Ações Realizadas no Mês: [Ex: "Foram enviadas 5 notificações de cobrança amigável. Nenhuma nova ação judicial foi iniciada."]
+
+Evolução da Inadimplência: Um pequeno gráfico mostrando a evolução da taxa nos últimos 6 meses pode ser muito útil.
+
+2.5. Situação dos Fundos (Reserva e Outros):
+
+Movimentação: Descrever se houve alguma aplicação ou retirada e sua justificativa, conforme aprovado em assembleia.
+
+3. Análise de Conformidade (Compliance)
+Esta seção verifica se o condomínio está cumprindo suas principais obrigações.
+
+3.1. Obrigações Trabalhistas (Funcionários Próprios):
+
+Status: [Ex: "Em conformidade."]
+
+Verificação: [Ex: "Guias de INSS e FGTS dos funcionários [Nomes] foram pagas dentro do vencimento. Folha de ponto verificada e sem inconsistências."]
+
+3.2. Contratos e Serviços de Terceiros:
+
+Status: [Ex: "Em conformidade."]
+
+Verificação: [Ex: "Pagamentos para a empresa de segurança e de limpeza estão de acordo com os contratos vigentes. Nenhuma pendência identificada."]
+
+3.3. Certificações e Manutenções Obrigatórias:
+
+Status: [Ex: "Atenção necessária."]
+
+Verificação:
+
+[✓] Manutenção mensal dos elevadores: Realizada em [data].
+
+[✓] Limpeza da caixa d'água: Válida até [data].
+
+[!] AVCB (Auto de Vistoria do Corpo de Bombeiros): Vence em [data].
+
+[!] Recarga dos extintores de incêndio: Vencida.
+
+3.4. Conformidade Interna:
+
+Verificação: Análise de multas aplicadas, reservas de áreas comuns e outras decisões do síndico para garantir que seguiram o Regimento Interno e a Convenção. [Ex: "As 3 multas por barulho aplicadas no mês seguiram o rito previsto no regimento."]
+
+4. Recomendações e Plano de Ação
+Seção prática e direta para a gestão do condomínio.
+
+Prioridade	Achado / Ponto de Atenção	Recomendação de Ação	Responsável	Prazo Sugerido
+Alta	Recarga dos extintores de incêndio vencida.	Contratar empresa especializada para realizar a recarga de todos os extintores.	Síndico	15 dias
+Média	AVCB com vencimento próximo.	Iniciar o processo de renovação do AVCB junto ao Corpo de Bombeiros.	Administradora	30 dias
+Baixa	Aumento de 10% na conta de água.	Realizar campanha de conscientização sobre o uso da água com os moradores.	Síndico/Conselho	Próximo mês
+
+Exportar para as Planilhas
+5. Anexos
+Balancete sintético do mês.
+
+Demonstrativo de despesas detalhado.
+
+Cópia da conciliação bancária.
+
+Relatório de inadimplentes (pode ser restrito ao síndico e conselho por questões de privacidade).
