@@ -103,6 +103,12 @@ export const auditReports = pgTable("audit_reports", {
   complianceVerification: jsonb("compliance_verification"), // Verificação de conformidade
   actionPlan: jsonb("action_plan"), // Plano de ação e recomendações
   
+  // AI-generated content fields
+  executiveSummary: text("executive_summary"), // Resumo executivo gerado pela IA
+  financialAnalysis: text("financial_analysis"), // Análise financeira detalhada
+  complianceAnalysis: text("compliance_analysis"), // Análise de conformidade
+  recommendationsText: text("recommendations_text"), // Texto de recomendações
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
