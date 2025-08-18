@@ -487,6 +487,8 @@ export default function Condominium() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Mês/Ano de Referência</TableHead>
+                  <TableHead>Arquivo</TableHead>
+                  <TableHead>Tamanho</TableHead>
                   <TableHead>Data de Upload</TableHead>
                   <TableHead>Status da Análise</TableHead>
                   <TableHead>Ações</TableHead>
@@ -498,10 +500,44 @@ export default function Condominium() {
                   const referenceDate = `${String(audit.month).padStart(2, '0')}/${audit.year}`;
                   const uploadDate = new Date(audit.createdAt).toLocaleDateString('pt-BR');
                   
+                  // Get file extension and format it
+                  const getFileType = (fileName: string) => {
+                    if (!fileName) return 'N/A';
+                    const extension = fileName.split('.').pop()?.toUpperCase();
+                    return extension || 'N/A';
+                  };
+                  
+                  // Format file size
+                  const formatFileSize = (bytes: number) => {
+                    if (!bytes) return 'N/A';
+                    if (bytes < 1024) return `${bytes} B`;
+                    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+                  };
+                  
                   return (
                     <TableRow key={audit.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-testid={`row-audit-${audit.id}`}>
                       <TableCell className="font-medium" data-testid={`text-audit-period-${audit.id}`}>
                         {referenceDate}
+                      </TableCell>
+                      <TableCell data-testid={`text-audit-file-type-${audit.id}`}>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            getFileType(audit.fileName) === 'PDF' 
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' 
+                              : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {getFileType(audit.fileName)}
+                          </span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px]" title={audit.fileName}>
+                            {audit.fileName}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell data-testid={`text-audit-file-size-${audit.id}`}>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatFileSize(audit.fileSize)}
+                        </span>
                       </TableCell>
                       <TableCell data-testid={`text-audit-upload-date-${audit.id}`}>
                         {uploadDate}
