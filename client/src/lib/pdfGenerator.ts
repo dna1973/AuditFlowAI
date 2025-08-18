@@ -1,11 +1,11 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import type { AuditReport } from '@shared/schema';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: typeof autoTable;
+    autoTable: (options: any) => jsPDF;
   }
 }
 
@@ -169,7 +169,7 @@ export class PDFReportGenerator {
         this.formatCurrency(expense.amount || 0)
       ]);
       
-      (this.doc as any).autoTable({
+      this.doc.autoTable({
         head: [['Descrição', 'Fornecedor', 'Valor']],
         body: expenseData,
         startY: yPos,
@@ -243,7 +243,7 @@ export class PDFReportGenerator {
         action.deadline || 'N/A'
       ]);
       
-      (this.doc as any).autoTable({
+      this.doc.autoTable({
         head: [['Prioridade', 'Achado/Ponto de Atenção', 'Recomendação', 'Responsável', 'Prazo']],
         body: actionData,
         startY: yPos,
@@ -276,7 +276,7 @@ export class PDFReportGenerator {
       const defaultData = defaultUnitsList.map(unit => [unit]);
       const columns = Math.ceil(defaultUnitsList.length / 20); // Max 20 per column
       
-      (this.doc as any).autoTable({
+      this.doc.autoTable({
         head: [['Lotes Inadimplentes']],
         body: defaultData.map(unit => unit),
         startY: yPos,
