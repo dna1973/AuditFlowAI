@@ -152,41 +152,72 @@ export class ExcelProcessor {
   }
   
   private generateMissingUnits(paidUnits: string[], totalUnits: number): string[] {
-    // Generate a reasonable list of units that might be defaulting
-    // This is an estimation based on the pattern of paid units
+    // Generate the complete list using the proper QAL01, QBL02, etc. format
+    // Based on the Condominio Morada Nobre pattern provided by the user
     
-    const defaultUnits: string[] = [];
-    const paidSet = new Set(paidUnits);
+    const allUnits: string[] = [];
+    const paidSet = new Set(paidUnits.map(unit => this.normalizeUnitToQFormat(unit)));
     
-    // Try to identify the unit numbering pattern
-    const hasBlockPattern = paidUnits.some(unit => unit.includes('-') || unit.includes('BL'));
+    // Define all quadras and their respective unit counts
+    const quadraUnits = [
+      { prefix: 'QA', count: 34 }, // QAL01-QAL34
+      { prefix: 'QB', count: 36 }, // QBL01-QBL36
+      { prefix: 'QC', count: 26 }, // QCL01-QCL26
+      { prefix: 'QD', count: 7 },  // QDL01-QDL07
+      { prefix: 'QE', count: 33 }, // QEL01-QEL33
+      { prefix: 'QF', count: 35 }, // QFL01-QFL35
+      { prefix: 'QG', count: 17 }, // QGL01-QGL17
+      { prefix: 'QH', count: 15 }, // QHL01-QHL15
+      { prefix: 'QI', count: 6 }   // QIL01-QIL06
+    ];
     
-    if (hasBlockPattern) {
-      // Generate missing block/apartment combinations
-      for (let block = 1; block <= 10; block++) {
-        for (let apt = 1; apt <= 20; apt++) {
-          const unitId = `BL${block.toString().padStart(2, '0')}AP${apt.toString().padStart(2, '0')}`;
-          const simpleId = `${block}-${apt.toString().padStart(2, '0')}`;
-          
-          if (!paidSet.has(unitId) && !paidSet.has(simpleId)) {
-            defaultUnits.push(simpleId);
-            if (defaultUnits.length >= (totalUnits - paidUnits.length)) break;
-          }
-        }
-        if (defaultUnits.length >= (totalUnits - paidUnits.length)) break;
-      }
-    } else {
-      // Generate simple sequential numbers
-      for (let i = 1; i <= totalUnits; i++) {
-        const unitId = i.toString().padStart(3, '0');
-        if (!paidSet.has(unitId) && !paidSet.has(i.toString())) {
-          defaultUnits.push(unitId);
-          if (defaultUnits.length >= (totalUnits - paidUnits.length)) break;
-        }
+    // Generate all possible units
+    for (const quadra of quadraUnits) {
+      for (let i = 1; i <= quadra.count; i++) {
+        const unitNumber = `${quadra.prefix}L${i.toString().padStart(2, '0')}`;
+        allUnits.push(unitNumber);
       }
     }
     
-    return defaultUnits.slice(0, totalUnits - paidUnits.length);
+    // Return only the units that are NOT in the paid list (defaulting units)
+    const defaultUnits = allUnits.filter(unit => !paidSet.has(unit));
+    
+    return defaultUnits.sort();
+  }
+  
+  private normalizeUnitToQFormat(unit: string): string {
+    // Convert various unit formats to the Q format (QAL01, QBL02, etc.)
+    
+    // If already in Q format, return as is
+    if (/^Q[A-I]L\d{2}$/.test(unit)) {
+      return unit;
+    }
+    
+    // Handle formats like "2-14" -> map to QB format
+    const blockAptMatch = unit.match(/^(\d+)-(\d+)$/);
+    if (blockAptMatch) {
+      const block = parseInt(blockAptMatch[1]);
+      const apt = parseInt(blockAptMatch[2]);
+      
+      // Simple mapping based on block number to quadra
+      const quadraMap: { [key: number]: string } = {
+        1: 'QA', 2: 'QB', 3: 'QC', 4: 'QD', 5: 'QE',
+        6: 'QF', 7: 'QG', 8: 'QH', 9: 'QI', 10: 'QA'
+      };
+      
+      const quadra = quadraMap[block] || 'QB'; // Default to QB if not found
+      return `${quadra}L${apt.toString().padStart(2, '0')}`;
+    }
+    
+    // For other formats, try to extract numbers and map to QB (most common)
+    const numberMatch = unit.match(/(\d+)/);
+    if (numberMatch) {
+      const num = parseInt(numberMatch[1]);
+      return `QBL${num.toString().padStart(2, '0')}`;
+    }
+    
+    // Default fallback
+    return unit;
   }
   
   private extractUnitNumber(unitValue: string): string | null {
