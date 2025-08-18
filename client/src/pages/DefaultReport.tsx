@@ -66,10 +66,8 @@ export default function DefaultReport() {
 
   // Generate lot payment data using real audit report data
   const generateLotData = (): LotPaymentData[] => {
-    // Use all lots for all condominiums, not just Morada Nobre specific ones
-    const allLots = selectedCondominiumData?.units ? 
-      Array.from({ length: selectedCondominiumData.units }, (_, i) => `${(i + 1).toString().padStart(3, '0')}`) :
-      MORADA_NOBRE_LOTS;
+    // Always use the specific lot nomenclature from Morada Nobre
+    const allLots = MORADA_NOBRE_LOTS;
 
     if (!latestReport) {
       return allLots.map(lotId => ({
@@ -112,8 +110,8 @@ export default function DefaultReport() {
   // Get unique quadras for filter (dynamically based on current lot data)
   const quadras = Array.from(new Set(
     lotData
-      .map(lot => lot.lotId.length >= 2 ? lot.lotId.substring(0, 2) : lot.lotId)
-      .filter(q => q.length > 0)
+      .map(lot => lot.lotId.substring(0, 2)) // Get the first 2 characters (e.g., QA, QB, etc.)
+      .filter(q => q.length === 2)
   )).sort();
 
   // Statistics - use real data from audit report when available
@@ -157,6 +155,21 @@ export default function DefaultReport() {
           </Badge>
         );
     }
+  };
+
+  const getQuadraColor = (quadra: string) => {
+    const colors = {
+      'QA': 'border-blue-200 bg-blue-50',
+      'QB': 'border-purple-200 bg-purple-50', 
+      'QC': 'border-pink-200 bg-pink-50',
+      'QD': 'border-yellow-200 bg-yellow-50',
+      'QE': 'border-green-200 bg-green-50',
+      'QF': 'border-indigo-200 bg-indigo-50',
+      'QG': 'border-orange-200 bg-orange-50',
+      'QH': 'border-teal-200 bg-teal-50',
+      'QI': 'border-red-200 bg-red-50'
+    };
+    return colors[quadra as keyof typeof colors] || 'border-gray-200 bg-gray-50';
   };
 
   return (
@@ -312,20 +325,54 @@ export default function DefaultReport() {
             </TabsList>
 
             <TabsContent value="grid" className="space-y-4">
+              {/* Quadra Color Legend */}
+              <Card className="mb-4">
+                <CardContent className="pt-6">
+                  <div className="mb-3">
+                    <h4 className="font-medium text-sm">Legenda das Quadras:</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {['QA', 'QB', 'QC', 'QD', 'QE', 'QF', 'QG', 'QH', 'QI'].map(quadra => (
+                      <div key={quadra} className="flex items-center gap-2">
+                        <div className={cn("w-4 h-4 rounded border", getQuadraColor(quadra))}></div>
+                        <span className="text-sm">Quadra {quadra.charAt(1)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-6 mt-4 pt-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded border border-green-300 bg-green-100"></div>
+                      <span className="text-sm">Pago</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded border border-red-300 bg-red-100"></div>
+                      <span className="text-sm">Inadimplente</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded border border-gray-300 bg-gray-100"></div>
+                      <span className="text-sm">Não informado</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-3">
                 {filteredLots.map((lot) => (
                   <Card 
                     key={lot.lotId} 
                     className={cn(
                       "transition-all hover:shadow-md cursor-pointer",
-                      lot.status === 'paid' && "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20",
-                      lot.status === 'defaulted' && "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20",
-                      lot.status === 'unknown' && "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
+                      lot.status === 'paid' && "border-green-300 bg-green-100 dark:border-green-800 dark:bg-green-900/20",
+                      lot.status === 'defaulted' && "border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-900/20", 
+                      lot.status === 'unknown' && getQuadraColor(lot.lotId.substring(0, 2))
                     )}
                     data-testid={`card-lot-${lot.lotId}`}
                   >
                     <CardContent className="p-3 text-center">
                       <div className="font-semibold text-sm mb-1">{lot.lotId}</div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        Q{lot.lotId.charAt(1)} L{lot.lotId.substring(3)}
+                      </div>
                       <div className="text-xs">
                         {lot.status === 'paid' ? (
                           <CheckCircle className="w-4 h-4 text-green-600 mx-auto" />
@@ -359,7 +406,7 @@ export default function DefaultReport() {
                         <div className="flex items-center gap-4">
                           <div className="font-semibold">{lot.lotId}</div>
                           <div className="text-sm text-gray-500">
-                            Quadra {lot.lotId.charAt(1)}
+                            Quadra {lot.lotId.charAt(1)} - Lote {lot.lotId.substring(3)}
                           </div>
                         </div>
                         
