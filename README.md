@@ -1,6 +1,6 @@
 # AuditFlowAI
 
-O AuditFlowAI é um sistema de gestão e automação de auditoria que utiliza inteligência artificial e ferramentas modernas de processamento de documentos para otimizar fluxos de trabalho de conformidade.
+Sistema de gestão e automação de auditoria que utiliza IA e processamento moderno de documentos para otimizar fluxos de conformidade.
 
 ## 🚀 Demo
 
@@ -8,7 +8,7 @@ O AuditFlowAI é um sistema de gestão e automação de auditoria que utiliza in
 
 ## 🛠 Tecnologias
 
-`TypeScript` · `CSS` · `HTML` · `JavaScript` · `React` · `Node.js` · `Express` · `Drizzle ORM` · `PostgreSQL (Neon)` · `Radix UI` · `Vite` · `Google Cloud Storage (GCP)`
+`TypeScript` · `CSS` · `HTML` · `JavaScript` · `React` · `Node.js (Express)` · `Drizzle ORM` · `PostgreSQL (Neon)` · `Radix UI` · `Google Cloud Storage (GCP)` · `Vite`
 
 ## 📸 Screenshots
 
